@@ -12,6 +12,9 @@ final class OverlayController {
     /// Exit animation must outlast the longest of fade (0.3s) / pop (0.5s).
     private let exitDuration: TimeInterval = 0.55
 
+    /// Fraction of the screen used as the random-placement area (centered).
+    static let randomAreaFraction: CGFloat = 0.8
+
     private var panel: NSPanel?
     private var visibility: OverlayVisibility?
     private var dismissTimer: Timer?
@@ -137,12 +140,14 @@ final class OverlayController {
         var origin: NSPoint
 
         if !item.fixedPosition {
-            // Random spot within the central 60% of the screen so the overlay
+            // Random spot within the central area of the screen so the overlay
             // stays near the middle and never hugs an edge.
-            let box = NSRect(x: vf.minX + vf.width * 0.2,
-                             y: vf.minY + vf.height * 0.2,
-                             width: vf.width * 0.6,
-                             height: vf.height * 0.6)
+            let f = Self.randomAreaFraction
+            let inset = (1 - f) / 2
+            let box = NSRect(x: vf.minX + vf.width * inset,
+                             y: vf.minY + vf.height * inset,
+                             width: vf.width * f,
+                             height: vf.height * f)
             let xLo = box.minX
             let xHi = max(box.minX, box.maxX - size.width)
             let yLo = box.minY

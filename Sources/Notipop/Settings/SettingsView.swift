@@ -81,6 +81,11 @@ struct SettingsView: View {
 private struct GeneralSettingsView: View {
     @ObservedObject var settings: AppSettings
     @State private var newBundleID = ""
+    @State private var snoozeChoice = StatusBarController.snoozeOptions.first!.minutes
+
+    private var snoozeLabel: String {
+        StatusBarController.snoozeOptions.first { $0.minutes == snoozeChoice }?.label ?? "\(snoozeChoice)분"
+    }
 
     var body: some View {
         Form {
@@ -115,15 +120,18 @@ private struct GeneralSettingsView: View {
                         }
                     }
                 } else {
-                    Menu("일시정지…") {
-                        ForEach(StatusBarController.snoozeOptions, id: \.minutes) { opt in
-                            Button(opt.label) {
-                                settings.snoozedUntil = Date().addingTimeInterval(Double(opt.minutes) * 60)
-                                settings.objectWillChange.send()
+                    LabeledContent("다음 시간 동안 일시 정지") {
+                        Menu(snoozeLabel) {
+                            ForEach(StatusBarController.snoozeOptions, id: \.minutes) { opt in
+                                Button(opt.label) {
+                                    snoozeChoice = opt.minutes
+                                    settings.snoozedUntil = Date().addingTimeInterval(Double(opt.minutes) * 60)
+                                    settings.objectWillChange.send()
+                                }
                             }
                         }
+                        .fixedSize()
                     }
-                    .fixedSize()
                 }
             }
 
@@ -235,14 +243,16 @@ private struct ItemSettingsView: View {
 
             Section("표시 설정") {
                 Toggle("위치 고정", isOn: item.fixedPosition)
-                if item.wrappedValue.fixedPosition {
-                    Picker("위치", selection: item.position) {
-                        ForEach(OverlayPosition.allCases) { Text($0.displayName).tag($0) }
-                    }
-                } else {
-                    Text("화면 중앙 부근(중앙 60% 범위)에 무작위로 표시됩니다.")
-                        .font(.callout).foregroundStyle(.secondary)
+                Picker("위치", selection: item.position) {
+                    ForEach(OverlayPosition.allCases) { Text($0.displayName).tag($0) }
                 }
+                .disabled(!item.wrappedValue.fixedPosition)
+                Text(item.wrappedValue.fixedPosition
+                     ? "선택한 위치에 고정으로 표시돼요."
+                     : "화면 가운데 근처에 랜덤으로 나타나요.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -307,7 +317,7 @@ private struct ItemSettingsView: View {
 
 private struct MediaCarousel: View {
     @Binding var item: ReminderItem
-    private let thumb: CGFloat = 132
+    private let thumb: CGFloat = 140
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
@@ -351,6 +361,7 @@ private struct ThumbCell: View {
         ZStack(alignment: .topTrailing) {
             MediaThumbnail(asset: asset)
                 .frame(width: size, height: size)
+                .background(Color.primary.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -381,13 +392,13 @@ private struct AddCell: View {
                 Image(systemName: "plus")
                     .font(.system(size: 34, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Text("이미지 / GIF / Lottie JSON")
+                Text("이미지 / GIF /\nLottie JSON")
                     .font(.caption2)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(width: size * 1.25, height: size)
+            .frame(width: size, height: size)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
@@ -410,7 +421,7 @@ private struct MediaThumbnail: View {
                 Image(nsImage: img)
                     .resizable()
                     .interpolation(.medium)
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: .fit)
             } else {
                 Rectangle().fill(Color.primary.opacity(0.06))
                     .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
@@ -425,7 +436,7 @@ private struct LottieThumbRepresentable: NSViewRepresentable {
     func makeNSView(context: Context) -> LottieAnimationView {
         let v = LottieAnimationView(filePath: url.path)
         v.loopMode = .loop
-        v.contentMode = .scaleAspectFill
+        v.contentMode = .scaleAspectFit
         v.play()
         return v
     }
@@ -462,13 +473,11 @@ private struct WindowsEditor: View {
                     HStack(spacing: 4) {
                         ForEach(1...7, id: \.self) { d in
                             let on = w.wrappedValue.weekdays.contains(d)
-                            Button(dayNames[d - 1]) {
+                            DayToggle(label: dayNames[d - 1], on: on) {
                                 var v = w.wrappedValue
                                 if on { v.weekdays.remove(d) } else { v.weekdays.insert(d) }
                                 w.wrappedValue = v
                             }
-                            .buttonStyle(.bordered)
-                            .tint(on ? .accentColor : .gray)
                         }
                     }
                 }
@@ -512,10 +521,14 @@ private struct SizePreview: View {
                     .strokeBorder(Color.secondary.opacity(0.4))
 
                 if !item.fixedPosition {
+                    let f = OverlayController.randomAreaFraction
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(nsColor: .textBackgroundColor))
+                        .frame(width: previewWidth * f, height: previewHeight * f)
                     RoundedRectangle(cornerRadius: 4)
                         .strokeBorder(Color.accentColor.opacity(0.5),
                                       style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .frame(width: previewWidth * 0.6, height: previewHeight * 0.6)
+                        .frame(width: previewWidth * f, height: previewHeight * f)
                 }
 
                 Group {
@@ -553,6 +566,26 @@ private struct MediaPreviewRepresentable: NSViewRepresentable {
             media.centerXAnchor.constraint(equalTo: nsView.centerXAnchor),
             media.centerYAnchor.constraint(equalTo: nsView.centerYAnchor),
         ])
+    }
+}
+
+private struct DayToggle: View {
+    let label: String
+    let on: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.callout)
+                .frame(width: 28, height: 26)
+                .foregroundStyle(on ? Color.white : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .background(on ? Color(red: 0x20 / 255, green: 0x20 / 255, blue: 0x20 / 255)
+                        : Color(nsColor: .controlColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.15)))
     }
 }
 
