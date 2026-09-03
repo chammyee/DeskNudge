@@ -33,7 +33,8 @@ struct SettingsView: View {
                     }
                 }
             }
-            .frame(minWidth: 200)
+            .frame(minWidth: 210)
+            .navigationTitle("Notipop 설정")
             .safeAreaInset(edge: .bottom) {
                 Button {
                     let new = ReminderItem()
@@ -41,19 +42,23 @@ struct SettingsView: View {
                     settings.objectWillChange.send()
                     selection = .item(new.id)
                 } label: {
-                    Label("항목 추가", systemImage: "plus")
+                    Label("알림 추가하기", systemImage: "plus")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderless)
-                .padding(8)
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .tint(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 22)
             }
         } detail: {
             switch selection {
             case .general, .none:
                 GeneralSettingsView(settings: settings)
             case .item(let id):
-                if let idx = settings.items.firstIndex(where: { $0.id == id }) {
-                    ItemSettingsView(settings: settings, index: idx, onDelete: {
+                if settings.items.firstIndex(where: { $0.id == id }) != nil {
+                    ItemSettingsView(settings: settings, itemID: id, onDelete: {
                         if let i = settings.items.firstIndex(where: { $0.id == id }) {
                             Store.shared.deleteMediaFiles(for: settings.items[i])
                             settings.items.remove(at: i)
@@ -67,7 +72,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(minWidth: 720, minHeight: 520)
+        .frame(minWidth: 740, minHeight: 540)
     }
 }
 
@@ -92,17 +97,52 @@ private struct GeneralSettingsView: View {
                     Text("시스템 설정 > 일반 > 로그인 항목에서 Notipop을 허용해 주세요.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
+                Toggle("메뉴 바에 표시", isOn: $settings.showMenuBarIcon)
+                if !settings.showMenuBarIcon {
+                    Text("메뉴 바 아이콘을 숨기면 Finder나 Spotlight에서 Notipop을 다시 실행해 설정을 열 수 있습니다.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
             }
 
-            Section("회의·녹화 중 숨기기") {
-                Toggle("카메라가 켜져 있으면 숨기기 (브라우저 영상통화 포함)", isOn: $settings.suppressWhenCameraActive)
-                Toggle("마이크가 켜져 있으면 숨기기", isOn: $settings.suppressWhenMicActive)
-                Toggle("화면 공유·미러링·아래 앱이 감지되면 숨기기", isOn: $settings.suppressDuringScreenShare)
-                Text("브라우저 안의 웹 회의는 앱으로는 안 잡히지만, 대부분 카메라를 켜므로 위 ‘카메라’ 옵션으로 커버됩니다. 화면만 공유하고 카메라를 끈 경우는 감지되지 않을 수 있습니다.")
+            Section("일시정지") {
+                if settings.isSnoozed, let until = settings.snoozedUntil {
+                    HStack {
+                        Text("\(until.formatted(date: .omitted, time: .shortened))까지 일시정지 중")
+                        Spacer()
+                        Button("해제") {
+                            settings.snoozedUntil = nil
+                            settings.objectWillChange.send()
+                        }
+                    }
+                } else {
+                    Menu("일시정지…") {
+                        ForEach(StatusBarController.snoozeOptions, id: \.minutes) { opt in
+                            Button(opt.label) {
+                                settings.snoozedUntil = Date().addingTimeInterval(Double(opt.minutes) * 60)
+                                settings.objectWillChange.send()
+                            }
+                        }
+                    }
+                    .fixedSize()
+                }
+            }
+
+            Section("회의·녹화 중 알림 중지") {
+                Toggle("카메라가 켜져 있으면 알림 중지", isOn: $settings.suppressWhenCameraActive)
+                Toggle("마이크가 켜져 있으면 알림 중지", isOn: $settings.suppressWhenMicActive)
+                Toggle("화면 공유, 미러링이 감지되면 알림 중지", isOn: $settings.suppressDuringScreenShare)
+                Text("브라우저 영상 통화 포함. 브라우저 안의 웹 회의는 앱으로는 안 잡히지만 대부분 카메라를 켜므로 ‘카메라’ 옵션으로 커버됩니다. 화면만 공유하고 카메라를 끈 경우는 감지되지 않을 수 있습니다.")
                     .font(.callout).foregroundStyle(.secondary)
             }
 
-            Section("감지할 앱") {
+            Section("회의·녹화 감지할 앱") {
+                HStack {
+                    TextField("번들 ID 추가 (예: us.zoom.xos)", text: $newBundleID)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(addBundleID)
+                    Button("추가하기", action: addBundleID)
+                }
+
                 ForEach(Array(settings.meetingAppBundleIDs.enumerated()), id: \.offset) { i, bid in
                     let app = InstalledApp.info(bundleID: bid)
                     HStack(spacing: 12) {
@@ -127,34 +167,17 @@ private struct GeneralSettingsView: View {
                     }
                     .padding(.vertical, 2)
                 }
-                HStack {
-                    TextField("번들 ID 추가 (예: us.zoom.xos)", text: $newBundleID)
-                        .textFieldStyle(.roundedBorder)
-                    Button("추가") {
-                        let v = newBundleID.trimmingCharacters(in: .whitespaces)
-                        guard !v.isEmpty, !settings.meetingAppBundleIDs.contains(v) else { return }
-                        settings.meetingAppBundleIDs.append(v)
-                        settings.objectWillChange.send()
-                        newBundleID = ""
-                    }
-                }
-            }
-
-            Section("일시정지") {
-                if settings.isSnoozed, let until = settings.snoozedUntil {
-                    HStack {
-                        Text("\(until.formatted(date: .omitted, time: .shortened)) 까지 일시정지 중")
-                        Spacer()
-                        Button("해제") { settings.snoozedUntil = nil; settings.objectWillChange.send() }
-                    }
-                } else {
-                    Text("메뉴바 아이콘에서 일시정지할 수 있습니다.")
-                        .font(.callout).foregroundStyle(.secondary)
-                }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("일반")
+    }
+
+    private func addBundleID() {
+        let v = newBundleID.trimmingCharacters(in: .whitespaces)
+        guard !v.isEmpty, !settings.meetingAppBundleIDs.contains(v) else { return }
+        settings.meetingAppBundleIDs.append(v)
+        settings.objectWillChange.send()
+        newBundleID = ""
     }
 }
 
@@ -162,13 +185,17 @@ private struct GeneralSettingsView: View {
 
 private struct ItemSettingsView: View {
     @ObservedObject var settings: AppSettings
-    let index: Int
+    let itemID: UUID
     var onDelete: () -> Void = {}
+
+    private var index: Int? { settings.items.firstIndex(where: { $0.id == itemID }) }
 
     private var item: Binding<ReminderItem> {
         Binding(
-            get: { settings.items[index] },
-            set: { settings.items[index] = $0; settings.objectWillChange.send() }
+            get: { settings.items.first(where: { $0.id == itemID }) ?? ReminderItem() },
+            set: { new in
+                if let i = index { settings.items[i] = new; settings.objectWillChange.send() }
+            }
         )
     }
 
@@ -176,21 +203,21 @@ private struct ItemSettingsView: View {
         Form {
             Section {
                 TextField("이름", text: item.name)
-                Toggle("이 항목 사용", isOn: item.enabled)
+                Toggle("알림 켜기", isOn: item.enabled)
             }
 
             Section("이미지 / 애니메이션") {
                 MediaCarousel(item: item)
             }
 
-            Section("표시 시점") {
+            Section("알림 간격") {
                 Picker("방식", selection: item.triggerMode) {
                     ForEach(TriggerMode.allCases) { Text($0.displayName).tag($0) }
                 }
                 if item.wrappedValue.triggerMode == .fixedIntervalInWindows {
                     Stepper("반복 간격: \(item.wrappedValue.intervalMinutes)분",
                             value: item.intervalMinutes, in: 1...120)
-                    Text("각 시간대 시작 시각부터 이 간격으로 반복됩니다. (예: 출근 08:30부터 10분마다)")
+                    Text("각 허용 시간 시작 시각부터 이 간격으로 반복됩니다. (예: 08:30부터 10분마다)")
                         .font(.callout).foregroundStyle(.secondary)
                 } else {
                     Stepper("최소 간격: \(item.wrappedValue.minIntervalMinutes)분",
@@ -202,35 +229,39 @@ private struct ItemSettingsView: View {
                 }
             }
 
-            Section("시간대 (비우면 매일 24시간)") {
+            Section("알림 허용 시간") {
                 WindowsEditor(item: item)
             }
 
-            Section("표시 방식") {
-                Toggle("랜덤 위치 (화면 중앙 60% 범위 안에서 무작위)", isOn: item.randomizePosition)
-                Picker("고정 위치", selection: item.position) {
-                    ForEach(OverlayPosition.allCases) { Text($0.displayName).tag($0) }
+            Section("표시 설정") {
+                Toggle("위치 고정", isOn: item.fixedPosition)
+                if item.wrappedValue.fixedPosition {
+                    Picker("위치", selection: item.position) {
+                        ForEach(OverlayPosition.allCases) { Text($0.displayName).tag($0) }
+                    }
+                } else {
+                    Text("화면 중앙 부근(중앙 60% 범위)에 무작위로 표시됩니다.")
+                        .font(.callout).foregroundStyle(.secondary)
                 }
-                .disabled(item.wrappedValue.randomizePosition)
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("크기(최대 한 변)")
-                        Slider(value: item.maxSize, in: 120...640, step: 10)
-                        Text("\(Int(item.wrappedValue.maxSize))")
-                            .monospacedDigit().frame(width: 40, alignment: .trailing)
+                        Text("크기")
+                        Slider(value: item.sizeScale, in: 0.3...3.0)
+                        Text("\(Int((item.wrappedValue.sizeScale * 100).rounded()))%")
+                            .monospacedDigit().frame(width: 48, alignment: .trailing)
                     }
                     SizePreview(item: item.wrappedValue)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Picker("표시 시간", selection: item.dismissMode) {
+                    Picker("알림 스타일", selection: item.dismissMode) {
                         ForEach(DismissMode.allCases) { Text($0.displayName).tag($0) }
                     }
 
                     if item.wrappedValue.dismissMode == .timed {
                         HStack(spacing: 8) {
-                            Text("노출 시간")
+                            Text("표시 시간")
                             TextField("", value: item.displayDuration, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 56)
@@ -252,23 +283,25 @@ private struct ItemSettingsView: View {
             }
 
             Section {
-                Button {
-                    NotificationCenter.default.post(name: .previewItem, object: settings.items[index])
-                } label: {
-                    Label("미리보기", systemImage: "eye")
-                }
-                .disabled(settings.items[index].media.isEmpty)
-            }
+                HStack {
+                    Button {
+                        if let i = index {
+                            NotificationCenter.default.post(name: .previewItem, object: settings.items[i])
+                        }
+                    } label: {
+                        Label("미리보기", systemImage: "eye")
+                    }
+                    .disabled(item.wrappedValue.media.isEmpty)
 
-            Section {
-                Button(role: .destructive, action: onDelete) {
-                    Label("이 항목 삭제", systemImage: "trash")
-                        .frame(maxWidth: .infinity)
+                    Spacer()
+
+                    Button(role: .destructive, action: onDelete) {
+                        Text("삭제").frame(minWidth: 64)
+                    }
                 }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle(settings.items[index].name)
     }
 }
 
@@ -406,6 +439,10 @@ private struct WindowsEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if item.activeWindows.isEmpty {
+                Text("비어 있으면 매일 24시간 알림이 허용됩니다.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
             ForEach(Array(item.activeWindows.enumerated()), id: \.element.id) { i, _ in
                 let w = Binding(
                     get: { item.activeWindows[i] },
@@ -438,7 +475,7 @@ private struct WindowsEditor: View {
                 Divider()
             }
             Button {
-                item.activeWindows.append(TimeWindow())
+                item.activeWindows.append(TimeWindow())   // 기본: 매일 00:00–24:00
             } label: { Label("시간대 추가", systemImage: "plus") }
         }
     }
@@ -455,10 +492,15 @@ private struct SizePreview: View {
     var body: some View {
         let screen = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size
             ?? CGSize(width: 1512, height: 900)
-        let scale = previewWidth / screen.width
-        let previewHeight = screen.height * scale
-        let box = item.maxSize * scale
+        let previewScale = previewWidth / screen.width
+        let previewHeight = screen.height * previewScale
+
         let firstAsset = item.media.first
+        let natural: CGSize = firstAsset.map {
+            MediaView.naturalSize(asset: $0, url: Store.shared.mediaURL(for: $0))
+        } ?? CGSize(width: 240, height: 240)
+        let boxW = natural.width * item.sizeScale * previewScale
+        let boxH = natural.height * item.sizeScale * previewScale
 
         VStack(alignment: .leading, spacing: 4) {
             Text("실제 화면 대비 크기 미리보기")
@@ -469,7 +511,7 @@ private struct SizePreview: View {
                 RoundedRectangle(cornerRadius: 6)
                     .strokeBorder(Color.secondary.opacity(0.4))
 
-                if item.randomizePosition {
+                if !item.fixedPosition {
                     RoundedRectangle(cornerRadius: 4)
                         .strokeBorder(Color.accentColor.opacity(0.5),
                                       style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
@@ -478,12 +520,13 @@ private struct SizePreview: View {
 
                 Group {
                     if let asset = firstAsset {
-                        MediaPreviewRepresentable(asset: asset, maxSize: box)
+                        MediaPreviewRepresentable(asset: asset,
+                                                  targetSize: NSSize(width: max(boxW, 6), height: max(boxH, 6)))
                     } else {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.accentColor.opacity(0.25))
                             .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
-                            .frame(width: box, height: box)
+                            .frame(width: max(boxW, 6), height: max(boxH, 6))
                     }
                 }
                 .shadow(radius: 3, y: 1)
@@ -496,7 +539,7 @@ private struct SizePreview: View {
 
 private struct MediaPreviewRepresentable: NSViewRepresentable {
     let asset: MediaAsset
-    let maxSize: CGFloat
+    let targetSize: NSSize
 
     func makeNSView(context: Context) -> NSView { NSView() }
 
@@ -504,7 +547,7 @@ private struct MediaPreviewRepresentable: NSViewRepresentable {
         nsView.subviews.forEach { $0.removeFromSuperview() }
         let url = Store.shared.mediaURL(for: asset)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
-        let media = MediaView(asset: asset, url: url, maxSize: max(8, maxSize))
+        let media = MediaView(asset: asset, url: url, targetSize: targetSize)
         nsView.addSubview(media)
         NSLayoutConstraint.activate([
             media.centerXAnchor.constraint(equalTo: nsView.centerXAnchor),
@@ -520,8 +563,8 @@ private struct MinutePicker: View {
     var body: some View {
         HStack(spacing: 4) {
             Text(title).foregroundStyle(.secondary)
-            Picker("", selection: Binding(get: { minute / 60 }, set: { minute = $0 * 60 + (minute % 60) })) {
-                ForEach(0...23, id: \.self) { Text(String(format: "%02d", $0)).tag($0) }
+            Picker("", selection: Binding(get: { min(minute / 60, 24) }, set: { minute = $0 * 60 + (minute % 60) })) {
+                ForEach(0...24, id: \.self) { Text(String(format: "%02d", $0)).tag($0) }
             }.labelsHidden().frame(width: 60)
             Text(":")
             Picker("", selection: Binding(get: { minute % 60 }, set: { minute = (minute / 60) * 60 + $0 })) {

@@ -10,12 +10,12 @@ final class OverlayVisibility: ObservableObject {
 private struct MediaRepresentable: NSViewRepresentable {
     let asset: MediaAsset
     let url: URL
-    let maxSize: CGFloat
+    let targetSize: NSSize
     let playOnce: Bool
     let onComplete: () -> Void
 
     func makeNSView(context: Context) -> MediaView {
-        MediaView(asset: asset, url: url, maxSize: maxSize, playOnce: playOnce, onComplete: onComplete)
+        MediaView(asset: asset, url: url, targetSize: targetSize, playOnce: playOnce, onComplete: onComplete)
     }
     func updateNSView(_ nsView: MediaView, context: Context) {}
 }
@@ -23,7 +23,7 @@ private struct MediaRepresentable: NSViewRepresentable {
 struct OverlayContentView: View {
     let asset: MediaAsset
     let url: URL
-    let maxSize: CGFloat
+    let targetSize: NSSize
     let playOnce: Bool
     let onComplete: () -> Void
     let onTap: () -> Void
@@ -36,7 +36,7 @@ struct OverlayContentView: View {
     var body: some View {
         ZStack {
             Color.clear
-            MediaRepresentable(asset: asset, url: url, maxSize: maxSize,
+            MediaRepresentable(asset: asset, url: url, targetSize: targetSize,
                                playOnce: playOnce, onComplete: onComplete)
                 .fixedSize()
                 .scaleEffect(vis.shown ? 1 : 0.6, anchor: .center)

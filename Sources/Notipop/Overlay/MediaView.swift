@@ -1,21 +1,19 @@
 import AppKit
 import Lottie
 
-/// Renders a single media asset (static image, animated GIF, or Lottie JSON)
-/// scaled to fit within `maxSize` on its longest edge. The view pins itself to
-/// an exact size via constraints so containers lay out predictably.
+/// Renders a single media asset (static image, animated GIF, or Lottie JSON) at
+/// an exact `targetSize` (caller computes it from the media's natural size and
+/// the item's size scale). The view pins itself to that size via constraints.
 ///
 /// When `playOnce` is true the animation runs a single time and `onComplete`
 /// fires when it finishes (static images fall back to a short fixed delay).
 final class MediaView: NSView {
 
-    private let maxSize: CGFloat
+    private let targetSize: NSSize
     private let playOnce: Bool
     private let onComplete: (() -> Void)?
 
     private var contentView: NSView?
-    private var sizeConstraints: [NSLayoutConstraint] = []
-    private var intrinsic: NSSize = NSSize(width: 320, height: 320)
     private var completionWork: DispatchWorkItem?
 
     /// Fallback on-screen time for a still image in `.playOnce` mode.
@@ -23,33 +21,45 @@ final class MediaView: NSView {
 
     init(asset: MediaAsset,
          url: URL,
-         maxSize: CGFloat,
+         targetSize: NSSize,
          playOnce: Bool = false,
          onComplete: (() -> Void)? = nil) {
-        self.maxSize = maxSize
+        self.targetSize = NSSize(width: max(targetSize.width.rounded(), 8),
+                                 height: max(targetSize.height.rounded(), 8))
         self.playOnce = playOnce
         self.onComplete = onComplete
         super.init(frame: .zero)
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
         build(asset: asset, url: url)
-        applySizeConstraints()
+        NSLayoutConstraint.activate([
+            widthAnchor.constraint(equalToConstant: self.targetSize.width),
+            heightAnchor.constraint(equalToConstant: self.targetSize.height),
+        ])
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
     deinit { completionWork?.cancel() }
 
-    override var intrinsicContentSize: NSSize { intrinsic }
+    override var intrinsicContentSize: NSSize { targetSize }
 
-    private func applySizeConstraints() {
-        NSLayoutConstraint.deactivate(sizeConstraints)
-        sizeConstraints = [
-            widthAnchor.constraint(equalToConstant: intrinsic.width),
-            heightAnchor.constraint(equalToConstant: intrinsic.height),
-        ]
-        NSLayoutConstraint.activate(sizeConstraints)
+    // MARK: Sizing helpers
+
+    /// Natural (100%) size of the media, without building the view.
+    static func naturalSize(asset: MediaAsset, url: URL) -> NSSize {
+        let fallback = NSSize(width: 320, height: 320)
+        let s: NSSize
+        switch asset.kind {
+        case .lottie:
+            s = LottieAnimation.filepath(url.path)?.size ?? fallback
+        case .image, .gif:
+            s = NSImage(contentsOf: url).map { $0.size } ?? fallback
+        }
+        return (s.width > 0 && s.height > 0) ? s : fallback
     }
+
+    // MARK: Build
 
     private func scheduleCompletion(after delay: TimeInterval) {
         guard let onComplete else { return }
@@ -63,8 +73,6 @@ final class MediaView: NSView {
         case .lottie:
             let animView = LottieAnimationView(filePath: url.path)
             animView.contentMode = .scaleAspectFit
-            let natural = animView.animation?.size ?? NSSize(width: 320, height: 320)
-            intrinsic = fit(natural)
             embed(animView)
             if playOnce {
                 animView.loopMode = .playOnce
@@ -76,25 +84,18 @@ final class MediaView: NSView {
 
         case .gif, .image:
             guard let image = NSImage(contentsOf: url) else {
-                let fallback = NSTextField(labelWithString: "이미지를 불러올 수 없습니다")
-                intrinsic = NSSize(width: 240, height: 40)
-                embed(fallback)
+                embed(NSTextField(labelWithString: "이미지를 불러올 수 없습니다"))
                 return
             }
             let iv = NSImageView()
             iv.image = image
             iv.imageScaling = .scaleProportionallyUpOrDown
             iv.animates = true            // animates multi-frame (GIF) representations
-            let natural = (image.size.width > 0 && image.size.height > 0) ? image.size : NSSize(width: 320, height: 320)
-            intrinsic = fit(natural)
             embed(iv)
 
             if playOnce {
                 if asset.kind == .gif, let total = Self.gifDuration(image), total > 0 {
-                    iv.animates = false
-                    iv.animates = true
                     scheduleCompletion(after: total)
-                    // Stop looping once the first pass is done.
                     let stop = DispatchWorkItem { [weak iv] in iv?.animates = false }
                     DispatchQueue.main.asyncAfter(deadline: .now() + total, execute: stop)
                 } else {
@@ -102,20 +103,6 @@ final class MediaView: NSView {
                 }
             }
         }
-    }
-
-    /// The on-screen size the overlay will use, without building the view.
-    static func fittedSize(asset: MediaAsset, url: URL, maxSize: CGFloat) -> NSSize {
-        let natural: NSSize
-        switch asset.kind {
-        case .lottie:
-            natural = LottieAnimation.filepath(url.path)?.size ?? NSSize(width: 320, height: 320)
-        case .image, .gif:
-            natural = NSImage(contentsOf: url).map { $0.size } ?? NSSize(width: 320, height: 320)
-        }
-        let w = max(natural.width, 1), h = max(natural.height, 1)
-        let scale = min(maxSize / w, maxSize / h)
-        return NSSize(width: (w * scale).rounded(), height: (h * scale).rounded())
     }
 
     /// Total duration of one loop of an animated GIF, in seconds.
@@ -133,12 +120,6 @@ final class MediaView: NSView {
         return total
     }
 
-    private func fit(_ size: NSSize) -> NSSize {
-        let w = max(size.width, 1), h = max(size.height, 1)
-        let scale = min(maxSize / w, maxSize / h)
-        return NSSize(width: (w * scale).rounded(), height: (h * scale).rounded())
-    }
-
     private func embed(_ view: NSView) {
         contentView?.removeFromSuperview()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -150,6 +131,5 @@ final class MediaView: NSView {
             view.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
         contentView = view
-        invalidateIntrinsicContentSize()
     }
 }

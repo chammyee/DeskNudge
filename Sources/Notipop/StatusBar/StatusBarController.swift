@@ -21,11 +21,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func refreshIcon() {
+        statusItem.isVisible = settings.showMenuBarIcon
         guard let button = statusItem.button else { return }
         let active = settings.globallyEnabled && !settings.isSnoozed
         button.image = AppAsset.menuBarImage(paused: !active)
         button.appearsDisabled = !active
     }
+
+    /// Snooze options shared by the menu bar and the Settings window.
+    static let snoozeOptions: [(label: String, minutes: Int)] = [
+        ("30분", 30), ("1시간", 60), ("2시간", 120), ("4시간", 240),
+    ]
 
     // MARK: Menu
 
@@ -45,10 +51,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         } else {
             let snooze = NSMenuItem(title: "일시정지", action: nil, keyEquivalent: "")
             let sub = NSMenu()
-            for m in [30, 60, 120, 240] {
-                let mi = NSMenuItem(title: "\(m)분", action: #selector(snoozeFor(_:)), keyEquivalent: "")
+            for opt in Self.snoozeOptions {
+                let mi = NSMenuItem(title: opt.label, action: #selector(snoozeFor(_:)), keyEquivalent: "")
                 mi.target = self
-                mi.representedObject = m
+                mi.representedObject = opt.minutes
                 sub.addItem(mi)
             }
             snooze.submenu = sub

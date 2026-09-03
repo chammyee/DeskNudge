@@ -3,12 +3,12 @@ import Foundation
 /// A time-of-day range, optionally restricted to certain weekdays.
 struct TimeWindow: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
-    /// Minutes from midnight (0...1439).
-    var startMinute: Int = 9 * 60
-    /// Minutes from midnight (0...1439). If <= startMinute the window is treated as empty.
-    var endMinute: Int = 18 * 60
-    /// 1 = Sunday ... 7 = Saturday (matches `Calendar` weekday component).
-    var weekdays: Set<Int> = [2, 3, 4, 5, 6]
+    /// Minutes from midnight (0...1440). Defaults to all day.
+    var startMinute: Int = 0
+    /// Minutes from midnight (0...1440). If <= startMinute the window is treated as empty.
+    var endMinute: Int = 24 * 60
+    /// 1 = Sunday ... 7 = Saturday (matches `Calendar` weekday component). Defaults to every day.
+    var weekdays: Set<Int> = [1, 2, 3, 4, 5, 6, 7]
 
     func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
         let comps = calendar.dateComponents([.hour, .minute, .weekday], from: date)
@@ -117,14 +117,13 @@ struct ReminderItem: Codable, Identifiable, Hashable {
     /// Seconds the overlay stays on screen when `dismissMode == .timed`.
     var displayDuration: Double = 8
 
+    /// When true the overlay appears at `position`; otherwise at a random spot
+    /// within the central ~60% of the screen.
+    var fixedPosition: Bool = false
     var position: OverlayPosition = .center
 
-    /// When true, `position` is ignored and the overlay appears at a random spot
-    /// within the central ~60% of the screen.
-    var randomizePosition: Bool = true
-
-    /// Longest edge of the overlay in points.
-    var maxSize: CGFloat = 320
+    /// Overlay size relative to the media's natural size. 1.0 == 100%.
+    var sizeScale: Double = 1.0
 
     func isActive(at date: Date, calendar: Calendar = .current) -> Bool {
         guard enabled else { return false }
@@ -139,7 +138,8 @@ struct ReminderItem: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, name, enabled, media, triggerMode, activeWindows
         case intervalMinutes, minIntervalMinutes, maxIntervalMinutes
-        case dismissMode, displayDuration, position, randomizePosition, maxSize
+        case dismissMode, displayDuration, position, fixedPosition, sizeScale
+        case randomizePosition   // legacy
     }
 
     init(from decoder: Decoder) throws {
@@ -161,8 +161,30 @@ struct ReminderItem: Codable, Identifiable, Hashable {
             d.dismissMode = d.displayDuration > 0 ? .timed : .untilClick
         }
         d.position = try c.decodeIfPresent(OverlayPosition.self, forKey: .position) ?? d.position
-        d.randomizePosition = try c.decodeIfPresent(Bool.self, forKey: .randomizePosition) ?? d.randomizePosition
-        d.maxSize = try c.decodeIfPresent(CGFloat.self, forKey: .maxSize) ?? d.maxSize
+        if let fixed = try c.decodeIfPresent(Bool.self, forKey: .fixedPosition) {
+            d.fixedPosition = fixed
+        } else if let legacyRandom = try c.decodeIfPresent(Bool.self, forKey: .randomizePosition) {
+            d.fixedPosition = !legacyRandom
+        }
+        d.sizeScale = try c.decodeIfPresent(Double.self, forKey: .sizeScale) ?? d.sizeScale
         self = d
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(media, forKey: .media)
+        try c.encode(triggerMode, forKey: .triggerMode)
+        try c.encode(activeWindows, forKey: .activeWindows)
+        try c.encode(intervalMinutes, forKey: .intervalMinutes)
+        try c.encode(minIntervalMinutes, forKey: .minIntervalMinutes)
+        try c.encode(maxIntervalMinutes, forKey: .maxIntervalMinutes)
+        try c.encode(dismissMode, forKey: .dismissMode)
+        try c.encode(displayDuration, forKey: .displayDuration)
+        try c.encode(position, forKey: .position)
+        try c.encode(fixedPosition, forKey: .fixedPosition)
+        try c.encode(sizeScale, forKey: .sizeScale)
     }
 }

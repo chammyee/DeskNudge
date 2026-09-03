@@ -33,6 +33,9 @@ final class AppSettings: ObservableObject, Codable {
 
     @Published var launchAtLogin: Bool = false
 
+    /// Show the menu-bar icon. When hidden, relaunch the app to reopen Settings.
+    @Published var showMenuBarIcon: Bool = true
+
     @Published var items: [ReminderItem] = []
 
     // MARK: Codable
@@ -40,7 +43,7 @@ final class AppSettings: ObservableObject, Codable {
     enum CodingKeys: String, CodingKey {
         case globallyEnabled, suppressDuringScreenShare, meetingAppBundleIDs
         case suppressWhenCameraActive, suppressWhenMicActive
-        case snoozedUntil, launchAtLogin, items
+        case snoozedUntil, launchAtLogin, showMenuBarIcon, items
     }
 
     init() {}
@@ -56,6 +59,7 @@ final class AppSettings: ObservableObject, Codable {
         }
         snoozedUntil = try c.decodeIfPresent(Date.self, forKey: .snoozedUntil)
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+        showMenuBarIcon = try c.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? true
         items = try c.decodeIfPresent([ReminderItem].self, forKey: .items) ?? []
     }
 
@@ -68,6 +72,7 @@ final class AppSettings: ObservableObject, Codable {
         try c.encode(meetingAppBundleIDs, forKey: .meetingAppBundleIDs)
         try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
         try c.encode(launchAtLogin, forKey: .launchAtLogin)
+        try c.encode(showMenuBarIcon, forKey: .showMenuBarIcon)
         try c.encode(items, forKey: .items)
     }
 
@@ -87,7 +92,7 @@ final class AppSettings: ObservableObject, Codable {
         clockIn.intervalMinutes = 10
         clockIn.activeWindows = [TimeWindow(startMinute: 8 * 60 + 30, endMinute: 9 * 60 + 30, weekdays: [2, 3, 4, 5, 6])]
         clockIn.dismissMode = .untilClick
-        clockIn.randomizePosition = false
+        clockIn.fixedPosition = true
         clockIn.position = .center
 
         var clockOut = ReminderItem()
@@ -96,7 +101,7 @@ final class AppSettings: ObservableObject, Codable {
         clockOut.intervalMinutes = 10
         clockOut.activeWindows = [TimeWindow(startMinute: 18 * 60, endMinute: 19 * 60, weekdays: [2, 3, 4, 5, 6])]
         clockOut.dismissMode = .untilClick
-        clockOut.randomizePosition = false
+        clockOut.fixedPosition = true
         clockOut.position = .center
 
         var back = ReminderItem()
@@ -107,7 +112,6 @@ final class AppSettings: ObservableObject, Codable {
         back.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         back.dismissMode = .timed
         back.displayDuration = 8
-        back.randomizePosition = true
 
         var posture = ReminderItem()
         posture.name = "자세 고쳐앉기"
@@ -117,7 +121,6 @@ final class AppSettings: ObservableObject, Codable {
         posture.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         posture.dismissMode = .timed
         posture.displayDuration = 8
-        posture.randomizePosition = true
 
         var stretch = ReminderItem()
         stretch.name = "목·눈 스트레칭"
@@ -127,7 +130,6 @@ final class AppSettings: ObservableObject, Codable {
         stretch.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         stretch.dismissMode = .timed
         stretch.displayDuration = 10
-        stretch.randomizePosition = true
 
         s.items = [clockIn, clockOut, back, posture, stretch]
         return s

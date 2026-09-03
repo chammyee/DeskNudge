@@ -25,14 +25,14 @@ final class OverlayController {
         let url = Store.shared.mediaURL(for: asset)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
 
-        let mediaSize = MediaView.fittedSize(asset: asset, url: url, maxSize: item.maxSize)
+        let mediaSize = Self.overlaySize(asset: asset, url: url, scale: item.sizeScale)
         // Pad the panel so the ease-out-back overshoot never clips.
         let panelSize = NSSize(width: ceil(mediaSize.width * 1.35) + 8,
                                height: ceil(mediaSize.height * 1.35) + 8)
 
         let vis = OverlayVisibility()
         let root = OverlayContentView(
-            asset: asset, url: url, maxSize: item.maxSize,
+            asset: asset, url: url, targetSize: mediaSize,
             playOnce: item.dismissMode == .playOnce,
             onComplete: { [weak self] in self?.dismiss() },
             onTap: { [weak self] in self?.dismiss() },
@@ -110,6 +110,19 @@ final class OverlayController {
         }
     }
 
+    /// Media natural size × the item's scale, clamped so it can't exceed ~90%
+    /// of the active screen.
+    static func overlaySize(asset: MediaAsset, url: URL, scale: Double) -> NSSize {
+        let natural = MediaView.naturalSize(asset: asset, url: url)
+        var w = natural.width * scale
+        var h = natural.height * scale
+        let vf = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size
+            ?? CGSize(width: 1440, height: 900)
+        let cap = min(vf.width * 0.9 / max(w, 1), vf.height * 0.9 / max(h, 1), 1)
+        w *= cap; h *= cap
+        return NSSize(width: w.rounded(), height: h.rounded())
+    }
+
     private func pickAsset(for item: ReminderItem) -> MediaAsset? {
         let existing = item.media.filter {
             FileManager.default.fileExists(atPath: Store.shared.mediaURL(for: $0).path)
@@ -123,7 +136,7 @@ final class OverlayController {
         let margin: CGFloat = 32
         var origin: NSPoint
 
-        if item.randomizePosition {
+        if !item.fixedPosition {
             // Random spot within the central 60% of the screen so the overlay
             // stays near the middle and never hugs an edge.
             let box = NSRect(x: vf.minX + vf.width * 0.2,
