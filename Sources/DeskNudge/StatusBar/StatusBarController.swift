@@ -1,0 +1,128 @@
+import AppKit
+
+/// The menu bar icon and its dropdown menu.
+final class StatusBarController: NSObject, NSMenuDelegate {
+
+    private let statusItem: NSStatusItem
+    private var store: Store { .shared }
+    private var settings: AppSettings { store.settings }
+
+    override init() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        super.init()
+
+        if let button = statusItem.button {
+            button.image = NSImage(systemSymbolName: "figure.stand", accessibilityDescription: "DeskNudge")
+            button.image?.isTemplate = true
+        }
+
+        let menu = NSMenu()
+        menu.delegate = self
+        statusItem.menu = menu
+
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshIcon),
+                                               name: .settingsChanged, object: nil)
+        refreshIcon()
+    }
+
+    @objc private func refreshIcon() {
+        guard let button = statusItem.button else { return }
+        let active = settings.globallyEnabled && !settings.isSnoozed
+        let symbol = active ? "figure.stand" : "figure.stand.line.dotted.figure.stand"
+        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "DeskNudge")
+        button.image?.isTemplate = true
+        button.appearsDisabled = !active
+    }
+
+    // MARK: Menu
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+
+        let master = NSMenuItem(title: "알림 켜기", action: #selector(toggleMaster), keyEquivalent: "")
+        master.target = self
+        master.state = settings.globallyEnabled ? .on : .off
+        menu.addItem(master)
+
+        if settings.isSnoozed, let until = settings.snoozedUntil {
+            let s = NSMenuItem(title: "일시정지 해제 (\(Self.timeFmt.string(from: until))까지)",
+                               action: #selector(clearSnooze), keyEquivalent: "")
+            s.target = self
+            menu.addItem(s)
+        } else {
+            let snooze = NSMenuItem(title: "일시정지", action: nil, keyEquivalent: "")
+            let sub = NSMenu()
+            for m in [30, 60, 120, 240] {
+                let mi = NSMenuItem(title: "\(m)분", action: #selector(snoozeFor(_:)), keyEquivalent: "")
+                mi.target = self
+                mi.representedObject = m
+                sub.addItem(mi)
+            }
+            snooze.submenu = sub
+            menu.addItem(snooze)
+        }
+
+        menu.addItem(.separator())
+
+        if settings.items.isEmpty {
+            let empty = NSMenuItem(title: "항목 없음 — 설정에서 추가하세요", action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+            menu.addItem(empty)
+        } else {
+            for (idx, item) in settings.items.enumerated() {
+                let mi = NSMenuItem(title: item.name, action: #selector(toggleItem(_:)), keyEquivalent: "")
+                mi.target = self
+                mi.state = item.enabled ? .on : .off
+                mi.representedObject = idx
+                menu.addItem(mi)
+            }
+        }
+
+        menu.addItem(.separator())
+
+        let settingsItem = NSMenuItem(title: "설정…", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let quit = NSMenuItem(title: "DeskNudge 종료", action: #selector(quit), keyEquivalent: "q")
+        quit.target = self
+        menu.addItem(quit)
+    }
+
+    @objc private func toggleMaster() {
+        settings.globallyEnabled.toggle()
+        settings.objectWillChange.send()
+    }
+
+    @objc private func toggleItem(_ sender: NSMenuItem) {
+        guard let idx = sender.representedObject as? Int, settings.items.indices.contains(idx) else { return }
+        settings.items[idx].enabled.toggle()
+        settings.objectWillChange.send()
+    }
+
+    @objc private func snoozeFor(_ sender: NSMenuItem) {
+        guard let minutes = sender.representedObject as? Int else { return }
+        settings.snoozedUntil = Date().addingTimeInterval(Double(minutes) * 60)
+        settings.objectWillChange.send()
+    }
+
+    @objc private func clearSnooze() {
+        settings.snoozedUntil = nil
+        settings.objectWillChange.send()
+    }
+
+    @objc private func openSettings() {
+        SettingsWindowController.shared.show()
+    }
+
+    @objc private func quit() {
+        Store.shared.saveNow()
+        NSApp.terminate(nil)
+    }
+
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+}
