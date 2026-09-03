@@ -74,10 +74,7 @@ final class OverlayController {
         // Kick the enter animation on the next runloop tick.
         DispatchQueue.main.async { vis.shown = true }
 
-        NSLog("Notipop: overlay shown for '\(item.name)' asset=\(asset.kind.rawValue)")
-        #if DEBUG
-        DebugLog.write("shown \(item.name) \(asset.kind.rawValue) size=\(mediaSize)")
-        #endif
+        NSLog("Notipop: overlay '\(item.name)' \(asset.kind.rawValue) \(Int(mediaSize.width))x\(Int(mediaSize.height))")
 
         switch item.dismissMode {
         case .untilClick:
@@ -102,9 +99,6 @@ final class OverlayController {
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         guard let panel else { return }
         self.panel = nil
-        #if DEBUG
-        DebugLog.write("dismissed")
-        #endif
 
         visibility?.shown = false          // run the exit animation
         visibility = nil

@@ -90,24 +90,20 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func toggleMaster() {
         settings.globallyEnabled.toggle()
-        settings.objectWillChange.send()
     }
 
     @objc private func toggleItem(_ sender: NSMenuItem) {
         guard let idx = sender.representedObject as? Int, settings.items.indices.contains(idx) else { return }
         settings.items[idx].enabled.toggle()
-        settings.objectWillChange.send()
     }
 
     @objc private func snoozeFor(_ sender: NSMenuItem) {
         guard let minutes = sender.representedObject as? Int else { return }
         settings.snoozedUntil = Date().addingTimeInterval(Double(minutes) * 60)
-        settings.objectWillChange.send()
     }
 
     @objc private func clearSnooze() {
         settings.snoozedUntil = nil
-        settings.objectWillChange.send()
     }
 
     @objc private func openSettings() {

@@ -29,7 +29,6 @@ struct SettingsView: View {
                     .onDelete { idx in
                         for i in idx { Store.shared.deleteMediaFiles(for: settings.items[i]) }
                         settings.items.remove(atOffsets: idx)
-                        settings.objectWillChange.send()
                     }
                 }
             }
@@ -39,7 +38,6 @@ struct SettingsView: View {
                 Button {
                     let new = ReminderItem()
                     settings.items.append(new)
-                    settings.objectWillChange.send()
                     selection = .item(new.id)
                 } label: {
                     Label("알림 추가하기", systemImage: "plus")
@@ -62,7 +60,6 @@ struct SettingsView: View {
                         if let i = settings.items.firstIndex(where: { $0.id == id }) {
                             Store.shared.deleteMediaFiles(for: settings.items[i])
                             settings.items.remove(at: i)
-                            settings.objectWillChange.send()
                         }
                         selection = .general
                     })
@@ -96,7 +93,6 @@ private struct GeneralSettingsView: View {
                     set: { want in
                         let ok = LoginItem.setEnabled(want)
                         settings.launchAtLogin = ok ? want : LoginItem.isEnabled
-                        settings.objectWillChange.send()
                     }))
                 if LoginItem.requiresUserApproval {
                     Text("시스템 설정 > 일반 > 로그인 항목에서 Notipop을 허용해 주세요.")
@@ -116,7 +112,6 @@ private struct GeneralSettingsView: View {
                         Spacer()
                         Button("해제") {
                             settings.snoozedUntil = nil
-                            settings.objectWillChange.send()
                         }
                     }
                 } else {
@@ -126,7 +121,6 @@ private struct GeneralSettingsView: View {
                                 Button(opt.label) {
                                     snoozeChoice = opt.minutes
                                     settings.snoozedUntil = Date().addingTimeInterval(Double(opt.minutes) * 60)
-                                    settings.objectWillChange.send()
                                 }
                             }
                         }
@@ -167,7 +161,6 @@ private struct GeneralSettingsView: View {
                         Spacer()
                         Button(role: .destructive) {
                             settings.meetingAppBundleIDs.remove(at: i)
-                            settings.objectWillChange.send()
                         } label: {
                             Image(systemName: "minus.circle").font(.title3)
                         }
@@ -184,7 +177,6 @@ private struct GeneralSettingsView: View {
         let v = newBundleID.trimmingCharacters(in: .whitespaces)
         guard !v.isEmpty, !settings.meetingAppBundleIDs.contains(v) else { return }
         settings.meetingAppBundleIDs.append(v)
-        settings.objectWillChange.send()
         newBundleID = ""
     }
 }
@@ -202,7 +194,7 @@ private struct ItemSettingsView: View {
         Binding(
             get: { settings.items.first(where: { $0.id == itemID }) ?? ReminderItem() },
             set: { new in
-                if let i = index { settings.items[i] = new; settings.objectWillChange.send() }
+                if let i = index { settings.items[i] = new }
             }
         )
     }

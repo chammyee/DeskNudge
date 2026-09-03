@@ -63,6 +63,7 @@ final class AppSettings: ObservableObject, Codable {
         items = try c.decodeIfPresent([ReminderItem].self, forKey: .items) ?? []
     }
 
+    // Codable can't be synthesized through @Published, so both halves are manual.
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(globallyEnabled, forKey: .globallyEnabled)

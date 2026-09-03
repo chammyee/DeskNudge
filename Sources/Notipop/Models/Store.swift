@@ -74,19 +74,6 @@ final class Store: ObservableObject {
         }
     }
 
-    /// Mutate settings in place and trigger a save.
-    func update(_ mutate: (AppSettings) -> Void) {
-        mutate(settings)
-        settings.objectWillChange.send()
-    }
-
-    func replaceSettings(_ new: AppSettings) {
-        settings = new
-        observe()
-        saveNow()
-        NotificationCenter.default.post(name: .settingsChanged, object: nil)
-    }
-
     // MARK: Media
 
     /// Copies a picked file into the media store and returns the asset descriptor.

@@ -21,13 +21,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if Store.shared.settings.items.isEmpty {
             SettingsWindowController.shared.show()
         }
-
-        if ProcessInfo.processInfo.environment["DESKNUDGE_PREVIEW"] != nil,
-           let item = Store.shared.settings.items.first(where: { !$0.media.isEmpty }) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                NotificationCenter.default.post(name: .previewItem, object: item)
-            }
-        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

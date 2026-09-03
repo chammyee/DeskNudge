@@ -17,10 +17,6 @@ struct TimeWindow: Codable, Identifiable, Hashable {
         let minuteOfDay = h * 60 + m
         return minuteOfDay >= startMinute && minuteOfDay < endMinute
     }
-
-    static func label(forMinute minute: Int) -> String {
-        String(format: "%02d:%02d", minute / 60, minute % 60)
-    }
 }
 
 enum TriggerMode: String, Codable, CaseIterable, Identifiable {
@@ -65,8 +61,6 @@ enum MediaKind: String, Codable {
         default: return .image
         }
     }
-
-    var isAnimated: Bool { self != .image }
 }
 
 enum DismissMode: String, Codable, CaseIterable, Identifiable {
@@ -131,15 +125,15 @@ struct ReminderItem: Codable, Identifiable, Hashable {
         return activeWindows.contains { $0.contains(date, calendar: calendar) }
     }
 
-    // Tolerant decoding: missing keys fall back to defaults so older/newer
-    // settings files keep loading as the schema evolves.
+    // Tolerant decoding: missing keys fall back to defaults so a settings file
+    // written by an older app version keeps loading when fields are added.
+    // (encode is synthesized.)
     init() {}
 
     enum CodingKeys: String, CodingKey {
         case id, name, enabled, media, triggerMode, activeWindows
         case intervalMinutes, minIntervalMinutes, maxIntervalMinutes
         case dismissMode, displayDuration, position, fixedPosition, sizeScale
-        case randomizePosition   // legacy
     }
 
     init(from decoder: Decoder) throws {
@@ -161,30 +155,8 @@ struct ReminderItem: Codable, Identifiable, Hashable {
             d.dismissMode = d.displayDuration > 0 ? .timed : .untilClick
         }
         d.position = try c.decodeIfPresent(OverlayPosition.self, forKey: .position) ?? d.position
-        if let fixed = try c.decodeIfPresent(Bool.self, forKey: .fixedPosition) {
-            d.fixedPosition = fixed
-        } else if let legacyRandom = try c.decodeIfPresent(Bool.self, forKey: .randomizePosition) {
-            d.fixedPosition = !legacyRandom
-        }
+        d.fixedPosition = try c.decodeIfPresent(Bool.self, forKey: .fixedPosition) ?? d.fixedPosition
         d.sizeScale = try c.decodeIfPresent(Double.self, forKey: .sizeScale) ?? d.sizeScale
         self = d
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id, forKey: .id)
-        try c.encode(name, forKey: .name)
-        try c.encode(enabled, forKey: .enabled)
-        try c.encode(media, forKey: .media)
-        try c.encode(triggerMode, forKey: .triggerMode)
-        try c.encode(activeWindows, forKey: .activeWindows)
-        try c.encode(intervalMinutes, forKey: .intervalMinutes)
-        try c.encode(minIntervalMinutes, forKey: .minIntervalMinutes)
-        try c.encode(maxIntervalMinutes, forKey: .maxIntervalMinutes)
-        try c.encode(dismissMode, forKey: .dismissMode)
-        try c.encode(displayDuration, forKey: .displayDuration)
-        try c.encode(position, forKey: .position)
-        try c.encode(fixedPosition, forKey: .fixedPosition)
-        try c.encode(sizeScale, forKey: .sizeScale)
     }
 }
