@@ -87,6 +87,7 @@ final class AppSettings: ObservableObject, Codable {
         clockIn.intervalMinutes = 10
         clockIn.activeWindows = [TimeWindow(startMinute: 8 * 60 + 30, endMinute: 9 * 60 + 30, weekdays: [2, 3, 4, 5, 6])]
         clockIn.dismissMode = .untilClick
+        clockIn.randomizePosition = false
         clockIn.position = .center
 
         var clockOut = ReminderItem()
@@ -95,6 +96,7 @@ final class AppSettings: ObservableObject, Codable {
         clockOut.intervalMinutes = 10
         clockOut.activeWindows = [TimeWindow(startMinute: 18 * 60, endMinute: 19 * 60, weekdays: [2, 3, 4, 5, 6])]
         clockOut.dismissMode = .untilClick
+        clockOut.randomizePosition = false
         clockOut.position = .center
 
         var back = ReminderItem()
@@ -105,7 +107,7 @@ final class AppSettings: ObservableObject, Codable {
         back.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         back.dismissMode = .timed
         back.displayDuration = 8
-        back.position = .bottomRight
+        back.randomizePosition = true
 
         var posture = ReminderItem()
         posture.name = "자세 고쳐앉기"
@@ -115,7 +117,7 @@ final class AppSettings: ObservableObject, Codable {
         posture.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         posture.dismissMode = .timed
         posture.displayDuration = 8
-        posture.position = .bottomRight
+        posture.randomizePosition = true
 
         var stretch = ReminderItem()
         stretch.name = "목·눈 스트레칭"
@@ -125,7 +127,7 @@ final class AppSettings: ObservableObject, Codable {
         stretch.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
         stretch.dismissMode = .timed
         stretch.displayDuration = 10
-        stretch.position = .center
+        stretch.randomizePosition = true
 
         s.items = [clockIn, clockOut, back, posture, stretch]
         return s
