@@ -7,8 +7,8 @@ struct TimeWindow: Codable, Identifiable, Hashable {
     var startMinute: Int = 0
     /// Minutes from midnight (0...1440). If <= startMinute the window is treated as empty.
     var endMinute: Int = 24 * 60
-    /// 1 = Sunday ... 7 = Saturday (matches `Calendar` weekday component). Defaults to every day.
-    var weekdays: Set<Int> = [1, 2, 3, 4, 5, 6, 7]
+    /// 1 = Sunday ... 7 = Saturday (matches `Calendar` weekday component). Defaults to weekdays.
+    var weekdays: Set<Int> = [2, 3, 4, 5, 6]
 
     func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
         let comps = calendar.dateComponents([.hour, .minute, .weekday], from: date)

@@ -314,13 +314,13 @@ private struct MediaCarousel: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
             HStack(alignment: .center, spacing: 12) {
+                AddCell(size: thumb) { pick() }
                 ForEach(item.media) { asset in
                     ThumbCell(asset: asset, size: thumb) {
                         Store.shared.deleteMediaFile(for: asset)
                         item.media.removeAll { $0.id == asset.id }
                     }
                 }
-                AddCell(size: thumb) { pick() }
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 2)
@@ -476,7 +476,7 @@ private struct WindowsEditor: View {
                 Divider()
             }
             Button {
-                item.activeWindows.append(TimeWindow())   // 기본: 매일 00:00–24:00
+                item.activeWindows.append(TimeWindow())   // 기본: 평일 00:00–24:00
             } label: { Label("시간대 추가", systemImage: "plus") }
         }
     }
@@ -508,7 +508,7 @@ private struct SizePreview: View {
                 .font(.caption).foregroundStyle(.secondary)
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .underPageBackgroundColor))
+                    .fill(Color(nsColor: item.fixedPosition ? .textBackgroundColor : .underPageBackgroundColor))
                 RoundedRectangle(cornerRadius: 6)
                     .strokeBorder(Color.secondary.opacity(0.4))
 
@@ -535,9 +535,22 @@ private struct SizePreview: View {
                     }
                 }
                 .shadow(radius: 3, y: 1)
+                .padding(6)
+                .frame(width: previewWidth, height: previewHeight,
+                       alignment: item.fixedPosition ? Self.alignment(item.position) : .center)
             }
             .frame(width: previewWidth, height: previewHeight)
             .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
+    private static func alignment(_ p: OverlayPosition) -> Alignment {
+        switch p {
+        case .center:      return .center
+        case .topLeft:     return .topLeading
+        case .topRight:    return .topTrailing
+        case .bottomLeft:  return .bottomLeading
+        case .bottomRight: return .bottomTrailing
         }
     }
 }
@@ -570,8 +583,9 @@ private struct DayToggle: View {
         Button(action: action) {
             Text(label)
                 .font(.callout)
-                .frame(width: 28, height: 26)
+                .frame(width: 40, height: 30)
                 .foregroundStyle(on ? Color.white : Color.primary)
+                .contentShape(Rectangle())        // whole cell is the hit target
         }
         .buttonStyle(.plain)
         .background(on ? Color(red: 0x20 / 255, green: 0x20 / 255, blue: 0x20 / 255)
