@@ -74,7 +74,7 @@ final class AppSettings: ObservableObject, Codable {
         clockIn.triggerMode = .fixedIntervalInWindows
         clockIn.intervalMinutes = 10
         clockIn.activeWindows = [TimeWindow(startMinute: 8 * 60 + 30, endMinute: 9 * 60 + 30, weekdays: [2, 3, 4, 5, 6])]
-        clockIn.displayDuration = 0            // stays until clicked
+        clockIn.dismissMode = .untilClick
         clockIn.position = .center
 
         var clockOut = ReminderItem()
@@ -82,7 +82,7 @@ final class AppSettings: ObservableObject, Codable {
         clockOut.triggerMode = .fixedIntervalInWindows
         clockOut.intervalMinutes = 10
         clockOut.activeWindows = [TimeWindow(startMinute: 18 * 60, endMinute: 19 * 60, weekdays: [2, 3, 4, 5, 6])]
-        clockOut.displayDuration = 0
+        clockOut.dismissMode = .untilClick
         clockOut.position = .center
 
         var back = ReminderItem()
@@ -91,6 +91,7 @@ final class AppSettings: ObservableObject, Codable {
         back.minIntervalMinutes = 35
         back.maxIntervalMinutes = 55
         back.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
+        back.dismissMode = .timed
         back.displayDuration = 8
         back.position = .bottomRight
 
@@ -100,6 +101,7 @@ final class AppSettings: ObservableObject, Codable {
         posture.minIntervalMinutes = 40
         posture.maxIntervalMinutes = 70
         posture.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
+        posture.dismissMode = .timed
         posture.displayDuration = 8
         posture.position = .bottomRight
 
@@ -109,6 +111,7 @@ final class AppSettings: ObservableObject, Codable {
         stretch.minIntervalMinutes = 45
         stretch.maxIntervalMinutes = 90
         stretch.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
+        stretch.dismissMode = .timed
         stretch.displayDuration = 10
         stretch.position = .center
 

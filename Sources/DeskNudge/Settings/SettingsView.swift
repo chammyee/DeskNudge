@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Lottie
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
@@ -154,7 +155,7 @@ private struct ItemSettingsView: View {
             }
 
             Section("이미지 / 애니메이션") {
-                MediaListEditor(item: item)
+                MediaCarousel(item: item)
             }
 
             Section("표시 시점") {
@@ -197,14 +198,30 @@ private struct ItemSettingsView: View {
                     SizePreview(item: item.wrappedValue)
                 }
 
-                VStack(alignment: .leading) {
-                    if item.wrappedValue.displayDuration <= 0 {
-                        Text("표시 시간: 클릭할 때까지 유지")
-                    } else {
-                        Text("표시 시간: \(Int(item.wrappedValue.displayDuration))초 후 자동으로 닫힘")
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("표시 시간", selection: item.dismissMode) {
+                        ForEach(DismissMode.allCases) { Text($0.displayName).tag($0) }
                     }
-                    Slider(value: item.displayDuration, in: 0...30, step: 1)
-                    Text("클릭하면 언제든 즉시 닫힙니다. 0 = 자동으로 닫지 않음.")
+
+                    if item.wrappedValue.dismissMode == .timed {
+                        HStack(spacing: 8) {
+                            Text("노출 시간")
+                            TextField("", value: item.displayDuration, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 56)
+                                .multilineTextAlignment(.trailing)
+                            Text("초")
+                            Stepper("", value: item.displayDuration, in: 1...600, step: 1)
+                                .labelsHidden()
+                        }
+                    }
+
+                    if item.wrappedValue.dismissMode == .playOnce {
+                        Text("애니메이션(GIF·Lottie)은 1회 재생 후 사라집니다. 정지 이미지는 \(Int(MediaView.stillImagePlayOnceDuration))초간 표시됩니다.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+
+                    Text("어떤 모드든 클릭하면 즉시 닫힙니다.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -223,37 +240,23 @@ private struct ItemSettingsView: View {
     }
 }
 
-private struct MediaListEditor: View {
+private struct MediaCarousel: View {
     @Binding var item: ReminderItem
+    private let thumb: CGFloat = 132
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if item.media.isEmpty {
-                Text("등록된 파일이 없습니다.").foregroundStyle(.secondary)
-            }
-            ForEach(item.media) { asset in
-                HStack {
-                    Image(systemName: icon(for: asset.kind))
-                    Text(asset.originalName).lineLimit(1).truncationMode(.middle)
-                    Spacer()
-                    Button(role: .destructive) {
+        ScrollView(.horizontal, showsIndicators: true) {
+            HStack(alignment: .center, spacing: 12) {
+                ForEach(item.media) { asset in
+                    ThumbCell(asset: asset, size: thumb) {
                         Store.shared.deleteMediaFile(for: asset)
                         item.media.removeAll { $0.id == asset.id }
-                    } label: { Image(systemName: "minus.circle") }
-                    .buttonStyle(.borderless)
+                    }
                 }
+                AddCell(size: thumb) { pick() }
             }
-            Button {
-                pick()
-            } label: { Label("파일 추가 (이미지 · GIF · Lottie JSON)", systemImage: "plus") }
-        }
-    }
-
-    private func icon(for kind: MediaKind) -> String {
-        switch kind {
-        case .image: return "photo"
-        case .gif: return "photo.stack"
-        case .lottie: return "sparkles"
+            .padding(.vertical, 6)
+            .padding(.horizontal, 2)
         }
     }
 
@@ -272,6 +275,97 @@ private struct MediaListEditor: View {
             }
         }
     }
+}
+
+private struct ThumbCell: View {
+    let asset: MediaAsset
+    let size: CGFloat
+    let onDelete: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            MediaThumbnail(asset: asset)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.primary.opacity(0.12))
+                )
+
+            Button(action: onDelete) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 20))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .black.opacity(0.55))
+                    .background(Circle().fill(.black.opacity(0.15)))
+            }
+            .buttonStyle(.plain)
+            .padding(5)
+        }
+        .help(asset.originalName)   // 이름은 호버 시 툴팁으로만
+    }
+}
+
+private struct AddCell: View {
+    let size: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("이미지 / GIF / Lottie JSON")
+                    .font(.caption2)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(width: size * 1.25, height: size)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .foregroundStyle(Color.primary.opacity(0.25))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct MediaThumbnail: View {
+    let asset: MediaAsset
+
+    var body: some View {
+        let url = Store.shared.mediaURL(for: asset)
+        Group {
+            if asset.kind == .lottie {
+                LottieThumbRepresentable(url: url)
+            } else if let img = NSImage(contentsOf: url) {
+                Image(nsImage: img)
+                    .resizable()
+                    .interpolation(.medium)
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Rectangle().fill(Color.primary.opacity(0.06))
+                    .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
+            }
+        }
+    }
+}
+
+private struct LottieThumbRepresentable: NSViewRepresentable {
+    let url: URL
+
+    func makeNSView(context: Context) -> LottieAnimationView {
+        let v = LottieAnimationView(filePath: url.path)
+        v.loopMode = .loop
+        v.contentMode = .scaleAspectFill
+        v.play()
+        return v
+    }
+
+    func updateNSView(_ nsView: LottieAnimationView, context: Context) {}
 }
 
 private struct WindowsEditor: View {

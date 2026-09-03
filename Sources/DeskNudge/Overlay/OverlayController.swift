@@ -19,35 +19,21 @@ final class OverlayController {
         let url = Store.shared.mediaURL(for: asset)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
 
-        let media = MediaView(asset: asset, url: url, maxSize: item.maxSize)
+        let media = MediaView(asset: asset,
+                              url: url,
+                              maxSize: item.maxSize,
+                              playOnce: item.dismissMode == .playOnce,
+                              onComplete: { [weak self] in self?.dismiss() })
         media.translatesAutoresizingMaskIntoConstraints = false
 
+        // No card, no border — just the (possibly transparent) media itself.
         let container = ClickThroughDismissView()
-        container.wantsLayer = true
-        container.layer?.cornerRadius = 18
-        container.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.92).cgColor
-        container.layer?.shadowColor = NSColor.black.cgColor
-        container.layer?.shadowOpacity = 0.28
-        container.layer?.shadowRadius = 24
-        container.layer?.shadowOffset = CGSize(width: 0, height: -6)
-
-        let label = NSTextField(labelWithString: item.name)
-        label.font = .systemFont(ofSize: 15, weight: .semibold)
-        label.alignment = .center
-        label.textColor = .labelColor
-        label.translatesAutoresizingMaskIntoConstraints = false
-
         container.addSubview(media)
-        container.addSubview(label)
         NSLayoutConstraint.activate([
-            media.topAnchor.constraint(equalTo: container.topAnchor, constant: 18),
-            media.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            media.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: 18),
-            media.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -18),
-            label.topAnchor.constraint(equalTo: media.bottomAnchor, constant: 10),
-            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 18),
-            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18),
-            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16),
+            media.topAnchor.constraint(equalTo: container.topAnchor),
+            media.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            media.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            media.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
 
         let panel = NSPanel(contentRect: .zero,
@@ -67,7 +53,7 @@ final class OverlayController {
 
         panel.layoutIfNeeded()
         let fitting = container.fittingSize
-        let size = NSSize(width: max(fitting.width, 160), height: max(fitting.height, 120))
+        let size = NSSize(width: max(fitting.width, 40), height: max(fitting.height, 40))
         let frame = frameRect(size: size, item: item)
         panel.setFrame(frame, display: true)
 
@@ -84,9 +70,18 @@ final class OverlayController {
         DebugLog.write("shown \(item.name) \(asset.kind.rawValue) size=\(size)")
         #endif
 
-        if item.displayDuration > 0 {
-            dismissTimer = Timer.scheduledTimer(withTimeInterval: item.displayDuration,
-                                                repeats: false) { [weak self] _ in
+        switch item.dismissMode {
+        case .untilClick:
+            break
+        case .timed:
+            let seconds = max(1, item.displayDuration)
+            dismissTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in
+                self?.dismiss()
+            }
+        case .playOnce:
+            // MediaView calls onComplete; keep a safety net so a broken file
+            // can't leave the overlay stuck forever.
+            dismissTimer = Timer.scheduledTimer(withTimeInterval: 90, repeats: false) { [weak self] _ in
                 self?.dismiss()
             }
         }
@@ -97,6 +92,9 @@ final class OverlayController {
         dismissTimer = nil
         guard let panel else { return }
         self.panel = nil
+        #if DEBUG
+        DebugLog.write("dismissed")
+        #endif
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.18
             panel.animator().alphaValue = 0

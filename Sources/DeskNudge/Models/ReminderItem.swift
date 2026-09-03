@@ -65,6 +65,23 @@ enum MediaKind: String, Codable {
         default: return .image
         }
     }
+
+    var isAnimated: Bool { self != .image }
+}
+
+enum DismissMode: String, Codable, CaseIterable, Identifiable {
+    case untilClick   // 클릭 시 닫힘
+    case timed        // 노출 시간 설정
+    case playOnce     // 한 번 재생 (애니메이션만)
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .untilClick: return "클릭 시 닫힘"
+        case .timed: return "노출 시간 설정"
+        case .playOnce: return "한 번 재생 (애니메이션만)"
+        }
+    }
 }
 
 /// A media file stored in the app's Application Support directory.
@@ -94,7 +111,10 @@ struct ReminderItem: Codable, Identifiable, Hashable {
     var minIntervalMinutes: Int = 30
     var maxIntervalMinutes: Int = 60
 
-    /// Seconds the overlay stays on screen. 0 = stays until clicked.
+    /// How the overlay goes away.
+    var dismissMode: DismissMode = .timed
+
+    /// Seconds the overlay stays on screen when `dismissMode == .timed`.
     var displayDuration: Double = 8
 
     var position: OverlayPosition = .center
@@ -119,7 +139,7 @@ struct ReminderItem: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, name, enabled, media, triggerMode, activeWindows
         case intervalMinutes, minIntervalMinutes, maxIntervalMinutes
-        case displayDuration, position, randomizePosition, maxSize
+        case dismissMode, displayDuration, position, randomizePosition, maxSize
     }
 
     init(from decoder: Decoder) throws {
@@ -135,6 +155,11 @@ struct ReminderItem: Codable, Identifiable, Hashable {
         d.minIntervalMinutes = try c.decodeIfPresent(Int.self, forKey: .minIntervalMinutes) ?? d.minIntervalMinutes
         d.maxIntervalMinutes = try c.decodeIfPresent(Int.self, forKey: .maxIntervalMinutes) ?? d.maxIntervalMinutes
         d.displayDuration = try c.decodeIfPresent(Double.self, forKey: .displayDuration) ?? d.displayDuration
+        if let mode = try c.decodeIfPresent(DismissMode.self, forKey: .dismissMode) {
+            d.dismissMode = mode
+        } else {
+            d.dismissMode = d.displayDuration > 0 ? .timed : .untilClick
+        }
         d.position = try c.decodeIfPresent(OverlayPosition.self, forKey: .position) ?? d.position
         d.randomizePosition = try c.decodeIfPresent(Bool.self, forKey: .randomizePosition) ?? d.randomizePosition
         d.maxSize = try c.decodeIfPresent(CGFloat.self, forKey: .maxSize) ?? d.maxSize
