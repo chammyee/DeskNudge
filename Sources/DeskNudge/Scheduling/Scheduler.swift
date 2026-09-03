@@ -55,15 +55,17 @@ final class Scheduler {
         guard settings.globallyEnabled, !settings.isSnoozed else { return }
         if OverlayController.shared.isShowing { return }
 
-        if settings.suppressDuringScreenShare {
-            let detector = CaptureDetector(meetingBundleIDs: settings.meetingAppBundleIDs)
-            if detector.isScreenBeingShared() {
-                // Nudge each due item a minute into the future and re-check later.
-                for (id, date) in nextFire where date <= now {
-                    nextFire[id] = now.addingTimeInterval(60)
-                }
-                return
+        let detector = CaptureDetector(
+            meetingBundleIDs: settings.meetingAppBundleIDs,
+            checkScreenShare: settings.suppressDuringScreenShare,
+            checkCamera: settings.suppressWhenCameraActive,
+            checkMic: settings.suppressWhenMicActive)
+        if detector.shouldSuppress() {
+            // Nudge each due item a minute into the future and re-check later.
+            for (id, date) in nextFire where date <= now {
+                nextFire[id] = now.addingTimeInterval(60)
             }
+            return
         }
 
         // Fire the earliest due, active item (one at a time).

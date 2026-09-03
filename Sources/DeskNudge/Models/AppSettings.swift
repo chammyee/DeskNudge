@@ -8,6 +8,12 @@ final class AppSettings: ObservableObject, Codable {
     /// Suppress overlays while a screen recording / mirroring / known meeting app is detected.
     @Published var suppressDuringScreenShare: Bool = true
 
+    /// Suppress overlays while the camera is active anywhere (covers browser video calls).
+    @Published var suppressWhenCameraActive: Bool = true
+
+    /// Suppress overlays while the microphone is active anywhere (more false positives).
+    @Published var suppressWhenMicActive: Bool = false
+
     /// Bundle identifiers that, when running, count as "screen sharing / recording in progress".
     @Published var meetingAppBundleIDs: [String] = [
         "us.zoom.xos",                 // Zoom
@@ -33,6 +39,7 @@ final class AppSettings: ObservableObject, Codable {
 
     enum CodingKeys: String, CodingKey {
         case globallyEnabled, suppressDuringScreenShare, meetingAppBundleIDs
+        case suppressWhenCameraActive, suppressWhenMicActive
         case snoozedUntil, launchAtLogin, items
     }
 
@@ -42,7 +49,11 @@ final class AppSettings: ObservableObject, Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         globallyEnabled = try c.decodeIfPresent(Bool.self, forKey: .globallyEnabled) ?? true
         suppressDuringScreenShare = try c.decodeIfPresent(Bool.self, forKey: .suppressDuringScreenShare) ?? true
-        meetingAppBundleIDs = try c.decodeIfPresent([String].self, forKey: .meetingAppBundleIDs) ?? []
+        suppressWhenCameraActive = try c.decodeIfPresent(Bool.self, forKey: .suppressWhenCameraActive) ?? true
+        suppressWhenMicActive = try c.decodeIfPresent(Bool.self, forKey: .suppressWhenMicActive) ?? false
+        if let ids = try c.decodeIfPresent([String].self, forKey: .meetingAppBundleIDs) {
+            meetingAppBundleIDs = ids
+        }
         snoozedUntil = try c.decodeIfPresent(Date.self, forKey: .snoozedUntil)
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
         items = try c.decodeIfPresent([ReminderItem].self, forKey: .items) ?? []
@@ -52,6 +63,8 @@ final class AppSettings: ObservableObject, Codable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(globallyEnabled, forKey: .globallyEnabled)
         try c.encode(suppressDuringScreenShare, forKey: .suppressDuringScreenShare)
+        try c.encode(suppressWhenCameraActive, forKey: .suppressWhenCameraActive)
+        try c.encode(suppressWhenMicActive, forKey: .suppressWhenMicActive)
         try c.encode(meetingAppBundleIDs, forKey: .meetingAppBundleIDs)
         try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
         try c.encode(launchAtLogin, forKey: .launchAtLogin)

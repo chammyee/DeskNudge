@@ -94,11 +94,15 @@ private struct GeneralSettingsView: View {
                 }
             }
 
-            Section("화면 공유·녹화 감지") {
-                Toggle("화면 공유/녹화가 감지되면 알림 숨기기", isOn: $settings.suppressDuringScreenShare)
-                Text("화면 미러링·AirPlay와 아래 목록의 앱 실행을 감지합니다. 브라우저 안의 웹 회의(Google Meet 등)는 감지되지 않을 수 있습니다.")
+            Section("회의·녹화 중 숨기기") {
+                Toggle("카메라가 켜져 있으면 숨기기 (브라우저 영상통화 포함)", isOn: $settings.suppressWhenCameraActive)
+                Toggle("마이크가 켜져 있으면 숨기기", isOn: $settings.suppressWhenMicActive)
+                Toggle("화면 공유·미러링·아래 앱이 감지되면 숨기기", isOn: $settings.suppressDuringScreenShare)
+                Text("브라우저 안의 웹 회의는 앱으로는 안 잡히지만, 대부분 카메라를 켜므로 위 ‘카메라’ 옵션으로 커버됩니다. 화면만 공유하고 카메라를 끈 경우는 감지되지 않을 수 있습니다.")
                     .font(.callout).foregroundStyle(.secondary)
+            }
 
+            Section("감지할 앱") {
                 ForEach(Array(settings.meetingAppBundleIDs.enumerated()), id: \.offset) { i, bid in
                     let app = InstalledApp.info(bundleID: bid)
                     HStack(spacing: 12) {
@@ -106,11 +110,9 @@ private struct GeneralSettingsView: View {
                             .resizable()
                             .interpolation(.high)
                             .frame(width: 64, height: 64)
-                            .opacity(app.installed ? 1 : 0.5)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(app.installed ? app.name : bid)
-                                .fontWeight(app.installed ? .medium : .regular)
-                            Text(app.installed ? bid : "설치되어 있지 않음")
+                            Text(app.name).fontWeight(.medium)
+                            Text(app.installed ? bid : "\(bid) · 미설치")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
