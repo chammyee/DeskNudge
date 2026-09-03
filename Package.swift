@@ -14,6 +14,7 @@ let package = Package(
                 .product(name: "Lottie", package: "lottie-spm")
             ],
             path: "Sources/DeskNudge",
+            resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]

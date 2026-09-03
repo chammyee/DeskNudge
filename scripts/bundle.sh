@@ -27,6 +27,11 @@ if [ -d "$BIN_DIR/Lottie.framework" ]; then
   cp -R "$BIN_DIR/Lottie.framework" "$APP/Contents/Frameworks/"
 fi
 
+# SwiftPM resource bundle (menu-bar icons etc.) — Bundle.module looks here.
+for b in "$BIN_DIR"/*.bundle; do
+  [ -d "$b" ] && cp -R "$b" "$APP/Contents/Resources/"
+done
+
 # Make the executable look in Contents/Frameworks.
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/$APP_NAME" 2>/dev/null || true
 

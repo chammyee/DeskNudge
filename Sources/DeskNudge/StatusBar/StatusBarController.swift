@@ -11,11 +11,6 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
-        if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "figure.stand", accessibilityDescription: "DeskNudge")
-            button.image?.isTemplate = true
-        }
-
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -28,9 +23,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     @objc private func refreshIcon() {
         guard let button = statusItem.button else { return }
         let active = settings.globallyEnabled && !settings.isSnoozed
-        let symbol = active ? "figure.stand" : "figure.stand.line.dotted.figure.stand"
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "DeskNudge")
-        button.image?.isTemplate = true
+        button.image = AppAsset.menuBarImage(paused: !active)
         button.appearsDisabled = !active
     }
 
