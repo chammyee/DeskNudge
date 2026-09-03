@@ -19,7 +19,7 @@ final class MediaView: NSView {
     private var completionWork: DispatchWorkItem?
 
     /// Fallback on-screen time for a still image in `.playOnce` mode.
-    static let stillImagePlayOnceDuration: TimeInterval = 5
+    static let stillImagePlayOnceDuration: TimeInterval = 3
 
     init(asset: MediaAsset,
          url: URL,
@@ -102,6 +102,20 @@ final class MediaView: NSView {
                 }
             }
         }
+    }
+
+    /// The on-screen size the overlay will use, without building the view.
+    static func fittedSize(asset: MediaAsset, url: URL, maxSize: CGFloat) -> NSSize {
+        let natural: NSSize
+        switch asset.kind {
+        case .lottie:
+            natural = LottieAnimation.filepath(url.path)?.size ?? NSSize(width: 320, height: 320)
+        case .image, .gif:
+            natural = NSImage(contentsOf: url).map { $0.size } ?? NSSize(width: 320, height: 320)
+        }
+        let w = max(natural.width, 1), h = max(natural.height, 1)
+        let scale = min(maxSize / w, maxSize / h)
+        return NSSize(width: (w * scale).rounded(), height: (h * scale).rounded())
     }
 
     /// Total duration of one loop of an animated GIF, in seconds.

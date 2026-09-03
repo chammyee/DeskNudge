@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// Shows a borderless, non-activating panel that floats above every app and on
 /// every Space (including full-screen apps). Click anywhere or wait for the
@@ -8,8 +9,13 @@ final class OverlayController {
     static let shared = OverlayController()
     private init() {}
 
+    /// Exit animation must outlast the longest of fade (0.3s) / pop (0.5s).
+    private let exitDuration: TimeInterval = 0.55
+
     private var panel: NSPanel?
+    private var visibility: OverlayVisibility?
     private var dismissTimer: Timer?
+    private var clickMonitor: Any?
 
     var isShowing: Bool { panel != nil }
 
@@ -19,24 +25,23 @@ final class OverlayController {
         let url = Store.shared.mediaURL(for: asset)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
 
-        let media = MediaView(asset: asset,
-                              url: url,
-                              maxSize: item.maxSize,
-                              playOnce: item.dismissMode == .playOnce,
-                              onComplete: { [weak self] in self?.dismiss() })
-        media.translatesAutoresizingMaskIntoConstraints = false
+        let mediaSize = MediaView.fittedSize(asset: asset, url: url, maxSize: item.maxSize)
+        // Pad the panel so the ease-out-back overshoot never clips.
+        let panelSize = NSSize(width: ceil(mediaSize.width * 1.35) + 8,
+                               height: ceil(mediaSize.height * 1.35) + 8)
 
-        // No card, no border — just the (possibly transparent) media itself.
-        let container = ClickThroughDismissView()
-        container.addSubview(media)
-        NSLayoutConstraint.activate([
-            media.topAnchor.constraint(equalTo: container.topAnchor),
-            media.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            media.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            media.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        ])
+        let vis = OverlayVisibility()
+        let root = OverlayContentView(
+            asset: asset, url: url, maxSize: item.maxSize,
+            playOnce: item.dismissMode == .playOnce,
+            onComplete: { [weak self] in self?.dismiss() },
+            onTap: { [weak self] in self?.dismiss() },
+            vis: vis)
 
-        let panel = NSPanel(contentRect: .zero,
+        let hosting = NSHostingView(rootView: root)
+        hosting.frame = NSRect(origin: .zero, size: panelSize)
+
+        let panel = NSPanel(contentRect: NSRect(origin: .zero, size: panelSize),
                             styleMask: [.borderless, .nonactivatingPanel],
                             backing: .buffered, defer: false)
         panel.isOpaque = false
@@ -48,26 +53,27 @@ final class OverlayController {
         panel.hidesOnDeactivate = false
         panel.worksWhenModal = true
         panel.ignoresMouseEvents = false
-        panel.contentView = container
-        container.onDismiss = { [weak self] in self?.dismiss() }
+        panel.contentView = hosting
 
-        panel.layoutIfNeeded()
-        let fitting = container.fittingSize
-        let size = NSSize(width: max(fitting.width, 40), height: max(fitting.height, 40))
-        let frame = frameRect(size: size, item: item)
+        let frame = frameRect(size: panelSize, item: item)
         panel.setFrame(frame, display: true)
-
-        panel.alphaValue = 0
         panel.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.22
-            panel.animator().alphaValue = 1
-        }
 
         self.panel = panel
-        NSLog("DeskNudge: overlay shown for '\(item.name)' asset=\(asset.kind.rawValue) frame=\(NSStringFromRect(frame))")
+        self.visibility = vis
+
+        // Backup dismissal: a click anywhere on the panel.
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            if event.window === self?.panel { self?.dismiss(); return nil }
+            return event
+        }
+
+        // Kick the enter animation on the next runloop tick.
+        DispatchQueue.main.async { vis.shown = true }
+
+        NSLog("DeskNudge: overlay shown for '\(item.name)' asset=\(asset.kind.rawValue)")
         #if DEBUG
-        DebugLog.write("shown \(item.name) \(asset.kind.rawValue) size=\(size)")
+        DebugLog.write("shown \(item.name) \(asset.kind.rawValue) size=\(mediaSize)")
         #endif
 
         switch item.dismissMode {
@@ -90,15 +96,16 @@ final class OverlayController {
     func dismiss() {
         dismissTimer?.invalidate()
         dismissTimer = nil
+        if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         guard let panel else { return }
         self.panel = nil
         #if DEBUG
         DebugLog.write("dismissed")
         #endif
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.18
-            panel.animator().alphaValue = 0
-        } completionHandler: {
+
+        visibility?.shown = false          // run the exit animation
+        visibility = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + exitDuration) {
             panel.orderOut(nil)
         }
     }
@@ -157,11 +164,4 @@ final class OverlayController {
             ?? NSScreen.main
             ?? NSScreen.screens.first!
     }
-}
-
-/// A view that dismisses the overlay on any mouse-down.
-private final class ClickThroughDismissView: NSView {
-    var onDismiss: (() -> Void)?
-    override func mouseDown(with event: NSEvent) { onDismiss?() }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

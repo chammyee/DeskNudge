@@ -53,8 +53,15 @@ struct SettingsView: View {
                 GeneralSettingsView(settings: settings)
             case .item(let id):
                 if let idx = settings.items.firstIndex(where: { $0.id == id }) {
-                    ItemSettingsView(settings: settings, index: idx)
-                        .id(id)
+                    ItemSettingsView(settings: settings, index: idx, onDelete: {
+                        if let i = settings.items.firstIndex(where: { $0.id == id }) {
+                            Store.shared.deleteMediaFiles(for: settings.items[i])
+                            settings.items.remove(at: i)
+                            settings.objectWillChange.send()
+                        }
+                        selection = .general
+                    })
+                    .id(id)
                 } else {
                     Text("항목을 선택하세요").foregroundStyle(.secondary)
                 }
@@ -139,6 +146,7 @@ private struct GeneralSettingsView: View {
 private struct ItemSettingsView: View {
     @ObservedObject var settings: AppSettings
     let index: Int
+    var onDelete: () -> Void = {}
 
     private var item: Binding<ReminderItem> {
         Binding(
@@ -233,6 +241,13 @@ private struct ItemSettingsView: View {
                     Label("미리보기", systemImage: "eye")
                 }
                 .disabled(settings.items[index].media.isEmpty)
+            }
+
+            Section {
+                Button(role: .destructive, action: onDelete) {
+                    Label("이 항목 삭제", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .formStyle(.grouped)
