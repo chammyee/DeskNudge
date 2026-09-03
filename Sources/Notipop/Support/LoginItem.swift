@@ -24,7 +24,7 @@ enum LoginItem {
             }
             return true
         } catch {
-            NSLog("DeskNudge: login item toggle failed: \(error.localizedDescription)")
+            NSLog("Notipop: login item toggle failed: \(error.localizedDescription)")
             return false
         }
     }

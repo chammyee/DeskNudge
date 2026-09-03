@@ -77,7 +77,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
 
-        let quit = NSMenuItem(title: "DeskNudge 종료", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Notipop 종료", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }

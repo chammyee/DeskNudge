@@ -1,11 +1,11 @@
 #!/bin/bash
-# Builds DeskNudge.app (release) into ./dist
+# Builds Notipop.app (release) into ./dist
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="DeskNudge"
-BUNDLE_ID="com.desknudge.app"
+APP_NAME="Notipop"
+BUNDLE_ID="com.notipop.app"
 VERSION="${VERSION:-1.0.0}"
 BUILD="${BUILD:-1}"
 
@@ -59,7 +59,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
-    <key>NSHumanReadableCopyright</key><string>DeskNudge</string>
+    <key>NSHumanReadableCopyright</key><string>Notipop</string>
     $ICON_KEY
 </dict>
 </plist>

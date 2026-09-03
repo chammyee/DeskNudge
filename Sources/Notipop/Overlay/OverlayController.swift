@@ -71,7 +71,7 @@ final class OverlayController {
         // Kick the enter animation on the next runloop tick.
         DispatchQueue.main.async { vis.shown = true }
 
-        NSLog("DeskNudge: overlay shown for '\(item.name)' asset=\(asset.kind.rawValue)")
+        NSLog("Notipop: overlay shown for '\(item.name)' asset=\(asset.kind.rawValue)")
         #if DEBUG
         DebugLog.write("shown \(item.name) \(asset.kind.rawValue) size=\(mediaSize)")
         #endif

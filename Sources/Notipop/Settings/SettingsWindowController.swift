@@ -20,7 +20,7 @@ final class SettingsWindowController {
         let hosting = NSHostingController(rootView: root)
 
         let win = NSWindow(contentViewController: hosting)
-        win.title = "DeskNudge 설정"
+        win.title = "Notipop 설정"
         win.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         win.setContentSize(NSSize(width: 820, height: 600))
         win.center()

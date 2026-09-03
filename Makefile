@@ -7,16 +7,16 @@ run:
 build:
 	swift build -c release
 
-# Package dist/DeskNudge.app
+# Package dist/Notipop.app
 app:
 	./scripts/bundle.sh
 
 # Build and copy into /Applications
 install: app
-	rm -rf /Applications/DeskNudge.app
-	cp -R dist/DeskNudge.app /Applications/
-	@echo "Installed to /Applications/DeskNudge.app"
-	open /Applications/DeskNudge.app
+	rm -rf /Applications/Notipop.app
+	cp -R dist/Notipop.app /Applications/
+	@echo "Installed to /Applications/Notipop.app"
+	open /Applications/Notipop.app
 
 clean:
 	rm -rf .build dist

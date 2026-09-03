@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 /// Central place for app artwork. Custom vector files in `Resources/` win;
 /// otherwise we fall back to SF Symbols so the app always has an icon.
 ///
-/// Menu-bar files (optional), added to `Sources/DeskNudge/Resources/`:
+/// Menu-bar files (optional), added to `Sources/Notipop/Resources/`:
 ///   • `MenuBarIcon.pdf`        — single-colour (black on transparent), ~18pt square
 ///   • `MenuBarIconPaused.pdf`  — same, shown while paused / disabled
 /// Both are treated as template images (macOS tints them for light/dark).
@@ -32,7 +32,7 @@ enum AppAsset {
 /// Resolves an app's icon + display name from its bundle id.
 ///
 /// Priority: real installed icon → user override PNG in
-/// `~/Library/Application Support/DeskNudge/AppIcons/<bundleid>.png` →
+/// `~/Library/Application Support/Notipop/AppIcons/<bundleid>.png` →
 /// a generated letter avatar (coloured tile with the app's initial).
 enum InstalledApp {
 
@@ -109,18 +109,23 @@ enum InstalledApp {
 
         let image = NSImage(size: NSSize(width: side, height: side))
         image.lockFocus()
-        let rect = NSRect(x: 0, y: 0, width: side, height: side)
-        NSBezierPath(roundedRect: rect, xRadius: 14, yRadius: 14).setClip()
-        bg.setFill(); rect.fill()
+        // Match the visual weight of real macOS app icons: the tile fills ~80%
+        // of the canvas (the rest is the padding/shadow region .icns files have).
+        let inset = side * 0.10
+        let tile = NSRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
+        let clip = NSBezierPath(roundedRect: tile, xRadius: tile.width * 0.225, yRadius: tile.width * 0.225)
+        clip.setClip()
+        bg.setFill(); tile.fill()
+
         let para = NSMutableParagraphStyle(); para.alignment = .center
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 34, weight: .semibold),
+            .font: NSFont.systemFont(ofSize: tile.width * 0.55, weight: .semibold),
             .foregroundColor: NSColor.white,
             .paragraphStyle: para,
         ]
         let size = (letter as NSString).size(withAttributes: attrs)
-        (letter as NSString).draw(at: NSPoint(x: (side - size.width) / 2,
-                                              y: (side - size.height) / 2),
+        (letter as NSString).draw(at: NSPoint(x: tile.midX - size.width / 2,
+                                              y: tile.midY - size.height / 2),
                                   withAttributes: attrs)
         image.unlockFocus()
         return image

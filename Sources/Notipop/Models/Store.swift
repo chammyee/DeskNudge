@@ -17,8 +17,15 @@ final class Store: ObservableObject {
 
     private init() {
         let fm = FileManager.default
-        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("DeskNudge", isDirectory: true)
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let base = appSupport.appendingPathComponent("Notipop", isDirectory: true)
+
+        // One-time migration from the app's former name.
+        let legacy = appSupport.appendingPathComponent("DeskNudge", isDirectory: true)
+        if !fm.fileExists(atPath: base.path), fm.fileExists(atPath: legacy.path) {
+            try? fm.moveItem(at: legacy, to: base)
+        }
+
         supportDirectory = base
         mediaDirectory = base.appendingPathComponent("Media", isDirectory: true)
         settingsFile = base.appendingPathComponent("settings.json")
@@ -63,7 +70,7 @@ final class Store: ObservableObject {
             let data = try enc.encode(settings)
             try data.write(to: settingsFile, options: .atomic)
         } catch {
-            NSLog("DeskNudge: failed to save settings: \(error)")
+            NSLog("Notipop: failed to save settings: \(error)")
         }
     }
 
@@ -108,6 +115,6 @@ final class Store: ObservableObject {
 }
 
 extension Notification.Name {
-    static let settingsChanged = Notification.Name("DeskNudge.settingsChanged")
-    static let previewItem = Notification.Name("DeskNudge.previewItem")
+    static let settingsChanged = Notification.Name("Notipop.settingsChanged")
+    static let previewItem = Notification.Name("Notipop.previewItem")
 }

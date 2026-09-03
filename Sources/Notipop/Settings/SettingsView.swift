@@ -89,7 +89,7 @@ private struct GeneralSettingsView: View {
                         settings.objectWillChange.send()
                     }))
                 if LoginItem.requiresUserApproval {
-                    Text("시스템 설정 > 일반 > 로그인 항목에서 DeskNudge를 허용해 주세요.")
+                    Text("시스템 설정 > 일반 > 로그인 항목에서 Notipop을 허용해 주세요.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
