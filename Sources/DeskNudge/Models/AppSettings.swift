@@ -10,17 +10,16 @@ final class AppSettings: ObservableObject, Codable {
 
     /// Bundle identifiers that, when running, count as "screen sharing / recording in progress".
     @Published var meetingAppBundleIDs: [String] = [
-        "us.zoom.xos",
-        "com.microsoft.teams2",
-        "com.microsoft.teams",
-        "com.google.Chrome.helper",          // best-effort; web Meet often not detectable
-        "com.hnc.Discord",
-        "com.tinyspeck.slackmacgap",
-        "com.obsproject.obs-studio",
-        "com.apple.QuickTimePlayerX",
-        "com.loom.desktop",
-        "com.cisco.webexmeetingsapp",
-        "com.readdle.PDFExpert-Mac"          // placeholder examples; editable in Settings
+        "us.zoom.xos",                 // Zoom
+        "com.microsoft.teams2",        // Teams (new)
+        "com.microsoft.teams",         // Teams (classic)
+        "com.hnc.Discord",             // Discord
+        "com.tinyspeck.slackmacgap",   // Slack
+        "com.obsproject.obs-studio",   // OBS
+        "com.apple.QuickTimePlayerX",  // QuickTime screen recording
+        "com.loom.desktop",            // Loom
+        "com.cisco.webexmeetingsapp",  // Webex
+        "com.google.meet",             // Google Meet (standalone PWA)
     ]
 
     /// Overlays paused until this date (snooze). nil = not snoozed.

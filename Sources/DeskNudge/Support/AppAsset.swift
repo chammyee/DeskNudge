@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 /// Central place for app artwork. Custom vector files in `Resources/` win;
 /// otherwise we fall back to SF Symbols so the app always has an icon.
@@ -26,4 +27,38 @@ enum AppAsset {
         img.isTemplate = true
         return img
     }
+}
+
+/// Resolves an installed app's real icon + display name from its bundle id.
+/// Apps that aren't installed fall back to the generic application icon.
+enum InstalledApp {
+
+    struct Info {
+        var name: String
+        var icon: NSImage
+        var installed: Bool
+    }
+
+    private static var cache: [String: Info] = [:]
+
+    static func info(bundleID: String) -> Info {
+        if let hit = cache[bundleID] { return hit }
+        let ws = NSWorkspace.shared
+        let result: Info
+        if let url = ws.urlForApplication(withBundleIdentifier: bundleID) {
+            let icon = ws.icon(forFile: url.path)
+            icon.size = NSSize(width: 64, height: 64)
+            var name = FileManager.default.displayName(atPath: url.path)
+            if name.hasSuffix(".app") { name = String(name.dropLast(4)) }
+            result = Info(name: name, icon: icon, installed: true)
+        } else {
+            let generic = ws.icon(for: .application)
+            generic.size = NSSize(width: 64, height: 64)
+            result = Info(name: bundleID, icon: generic, installed: false)
+        }
+        cache[bundleID] = result
+        return result
+    }
+
+    static func clearCache() { cache.removeAll() }
 }

@@ -100,15 +100,30 @@ private struct GeneralSettingsView: View {
                     .font(.callout).foregroundStyle(.secondary)
 
                 ForEach(Array(settings.meetingAppBundleIDs.enumerated()), id: \.offset) { i, bid in
-                    HStack {
-                        Text(bid).font(.system(.body, design: .monospaced))
+                    let app = InstalledApp.info(bundleID: bid)
+                    HStack(spacing: 12) {
+                        Image(nsImage: app.icon)
+                            .resizable()
+                            .interpolation(.high)
+                            .frame(width: 64, height: 64)
+                            .opacity(app.installed ? 1 : 0.5)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(app.installed ? app.name : bid)
+                                .fontWeight(app.installed ? .medium : .regular)
+                            Text(app.installed ? bid : "설치되어 있지 않음")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                         Spacer()
                         Button(role: .destructive) {
                             settings.meetingAppBundleIDs.remove(at: i)
                             settings.objectWillChange.send()
-                        } label: { Image(systemName: "minus.circle") }
+                        } label: {
+                            Image(systemName: "minus.circle").font(.title3)
+                        }
                         .buttonStyle(.borderless)
                     }
+                    .padding(.vertical, 2)
                 }
                 HStack {
                     TextField("번들 ID 추가 (예: us.zoom.xos)", text: $newBundleID)
