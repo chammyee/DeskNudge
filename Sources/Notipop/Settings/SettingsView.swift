@@ -215,8 +215,7 @@ private struct ItemSettingsView: View {
                     ForEach(TriggerMode.allCases) { Text($0.displayName).tag($0) }
                 }
                 if item.wrappedValue.triggerMode == .fixedIntervalInWindows {
-                    Stepper("반복 간격: \(item.wrappedValue.intervalMinutes)분",
-                            value: item.intervalMinutes, in: 1...120)
+                    IntervalField(label: "반복 간격", minutes: item.intervalMinutes)
                     Text("각 허용 시간 시작 시각부터 이 간격으로 반복됩니다. (예: 08:30부터 10분마다)")
                         .font(.callout).foregroundStyle(.secondary)
                 } else {
@@ -596,34 +595,48 @@ private struct DayToggle: View {
     }
 }
 
-/// Minutes value with free-text entry + a preset dropdown.
+/// Minutes value as a segmented control of presets plus a "직접 입력" segment
+/// that reveals a text field.
 private struct IntervalField: View {
     let label: String
     @Binding var minutes: Int
+    @State private var custom: Bool
 
     private static let presets: [(String, Int)] = [
-        ("5분", 5), ("10분", 10), ("15분", 15), ("30분", 30),
-        ("1시간", 60), ("2시간", 120), ("3시간", 180),
+        ("5분", 5), ("10분", 10), ("15분", 15), ("30분", 30), ("1시간", 60),
     ]
+    private static let customTag = -1
+    private static var presetValues: [Int] { presets.map(\.1) }
+
+    init(label: String, minutes: Binding<Int>) {
+        self.label = label
+        self._minutes = minutes
+        self._custom = State(initialValue: !Self.presetValues.contains(minutes.wrappedValue))
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text(label)
-            TextField("", value: Binding(get: { minutes }, set: { minutes = max(1, $0) }),
-                      format: .number)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 56)
-                .multilineTextAlignment(.trailing)
-            Text("분")
-            Menu {
-                ForEach(Self.presets, id: \.1) { name, m in
-                    Button(name) { minutes = m }
-                }
-            } label: {
-                Image(systemName: "chevron.down")
+        VStack(alignment: .leading, spacing: 6) {
+            Picker(label, selection: Binding(
+                get: { custom ? Self.customTag : minutes },
+                set: { v in
+                    if v == Self.customTag { custom = true }
+                    else { custom = false; minutes = v }
+                })) {
+                ForEach(Self.presets, id: \.1) { Text($0.0).tag($0.1) }
+                Text("직접 입력").tag(Self.customTag)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .pickerStyle(.segmented)
+
+            if custom {
+                HStack(spacing: 8) {
+                    TextField("", value: Binding(get: { minutes }, set: { minutes = max(1, $0) }),
+                              format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 60)
+                        .multilineTextAlignment(.trailing)
+                    Text("분")
+                }
+            }
         }
     }
 }

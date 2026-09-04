@@ -86,53 +86,30 @@ final class AppSettings: ObservableObject, Codable {
 
     static func makeDefault() -> AppSettings {
         let s = AppSettings()
+        let weekdays: Set<Int> = [2, 3, 4, 5, 6]
 
-        var clockIn = ReminderItem()
-        clockIn.name = "출근 찍기"
-        clockIn.triggerMode = .fixedIntervalInWindows
-        clockIn.intervalMinutes = 10
-        clockIn.activeWindows = [TimeWindow(startMinute: 8 * 60 + 30, endMinute: 9 * 60 + 30, weekdays: [2, 3, 4, 5, 6])]
-        clockIn.dismissMode = .untilClick
-        clockIn.fixedPosition = true
-        clockIn.position = .center
-
-        var clockOut = ReminderItem()
-        clockOut.name = "퇴근 찍기"
-        clockOut.triggerMode = .fixedIntervalInWindows
-        clockOut.intervalMinutes = 10
-        clockOut.activeWindows = [TimeWindow(startMinute: 18 * 60, endMinute: 19 * 60, weekdays: [2, 3, 4, 5, 6])]
-        clockOut.dismissMode = .untilClick
-        clockOut.fixedPosition = true
-        clockOut.position = .center
-
-        var back = ReminderItem()
-        back.name = "허리 펴기"
-        back.triggerMode = .randomInterval
-        back.minIntervalMinutes = 35
-        back.maxIntervalMinutes = 55
-        back.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
-        back.dismissMode = .timed
-        back.displayDuration = 8
+        var clock = ReminderItem()
+        clock.name = "출퇴근 찍기"
+        clock.triggerMode = .fixedIntervalInWindows
+        clock.intervalMinutes = 10
+        clock.activeWindows = [
+            TimeWindow(startMinute: 8 * 60 + 30, endMinute: 9 * 60 + 30, weekdays: weekdays),
+            TimeWindow(startMinute: 18 * 60, endMinute: 19 * 60, weekdays: weekdays),
+        ]
+        clock.dismissMode = .untilClick
+        clock.fixedPosition = true
+        clock.position = .center
 
         var posture = ReminderItem()
         posture.name = "자세 고쳐앉기"
         posture.triggerMode = .randomInterval
-        posture.minIntervalMinutes = 40
-        posture.maxIntervalMinutes = 70
-        posture.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
+        posture.minIntervalMinutes = 30
+        posture.maxIntervalMinutes = 60
+        posture.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: weekdays)]
         posture.dismissMode = .timed
         posture.displayDuration = 8
 
-        var stretch = ReminderItem()
-        stretch.name = "목·눈 스트레칭"
-        stretch.triggerMode = .randomInterval
-        stretch.minIntervalMinutes = 45
-        stretch.maxIntervalMinutes = 90
-        stretch.activeWindows = [TimeWindow(startMinute: 9 * 60 + 30, endMinute: 18 * 60, weekdays: [2, 3, 4, 5, 6])]
-        stretch.dismissMode = .timed
-        stretch.displayDuration = 10
-
-        s.items = [clockIn, clockOut, back, posture, stretch]
+        s.items = [clock, posture]
         return s
     }
 }
