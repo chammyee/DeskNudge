@@ -534,9 +534,9 @@ private struct SizePreview: View {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.accentColor.opacity(0.25))
                             .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
-                            .frame(width: max(boxW, 6), height: max(boxH, 6))
                     }
                 }
+                .frame(width: max(boxW, 6), height: max(boxH, 6))
                 .shadow(radius: 3, y: 1)
                 .padding(6)
                 .frame(width: previewWidth, height: previewHeight,
