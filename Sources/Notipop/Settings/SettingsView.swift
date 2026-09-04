@@ -220,10 +220,8 @@ private struct ItemSettingsView: View {
                     Text("각 허용 시간 시작 시각부터 이 간격으로 반복됩니다. (예: 08:30부터 10분마다)")
                         .font(.callout).foregroundStyle(.secondary)
                 } else {
-                    Stepper("최소 간격: \(item.wrappedValue.minIntervalMinutes)분",
-                            value: item.minIntervalMinutes, in: 1...240)
-                    Stepper("최대 간격: \(item.wrappedValue.maxIntervalMinutes)분",
-                            value: item.maxIntervalMinutes, in: 1...480)
+                    IntervalField(label: "최소 간격", minutes: item.minIntervalMinutes)
+                    IntervalField(label: "최대 간격", minutes: item.maxIntervalMinutes)
                     Text("이 범위 안에서 무작위 간격으로 등장합니다.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
@@ -595,6 +593,38 @@ private struct DayToggle: View {
                         : Color(nsColor: .controlColor))
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.15)))
+    }
+}
+
+/// Minutes value with free-text entry + a preset dropdown.
+private struct IntervalField: View {
+    let label: String
+    @Binding var minutes: Int
+
+    private static let presets: [(String, Int)] = [
+        ("5분", 5), ("10분", 10), ("15분", 15), ("30분", 30),
+        ("1시간", 60), ("2시간", 120), ("3시간", 180),
+    ]
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+            TextField("", value: Binding(get: { minutes }, set: { minutes = max(1, $0) }),
+                      format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 56)
+                .multilineTextAlignment(.trailing)
+            Text("분")
+            Menu {
+                ForEach(Self.presets, id: \.1) { name, m in
+                    Button(name) { minutes = m }
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
     }
 }
 
