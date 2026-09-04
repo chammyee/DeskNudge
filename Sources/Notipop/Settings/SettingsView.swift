@@ -234,8 +234,11 @@ private struct ItemSettingsView: View {
             }
 
             Section("표시 설정") {
-                Toggle("위치 고정", isOn: item.fixedPosition)
-                Picker("위치", selection: item.position) {
+                Picker("위치", selection: item.fixedPosition) {
+                    Text("랜덤 위치").tag(false)
+                    Text("고정 위치").tag(true)
+                }
+                Picker("고정 위치", selection: item.position) {
                     ForEach(OverlayPosition.allCases) { Text($0.displayName).tag($0) }
                 }
                 .disabled(!item.wrappedValue.fixedPosition)
