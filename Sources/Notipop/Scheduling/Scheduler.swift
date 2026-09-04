@@ -53,7 +53,15 @@ final class Scheduler {
         let now = Date()
 
         guard settings.globallyEnabled, !settings.isSnoozed else { return }
-        if OverlayController.shared.isShowing { return }
+        if OverlayController.shared.isShowing {
+            // A "클릭 시 닫힘" overlay still closes once its window passes.
+            if let shown = OverlayController.shared.shownItem,
+               shown.dismissMode == .untilClick,
+               !shown.isActive(at: now, calendar: calendar) {
+                OverlayController.shared.dismiss()
+            }
+            return
+        }
 
         let detector = CaptureDetector(
             meetingBundleIDs: settings.meetingAppBundleIDs,

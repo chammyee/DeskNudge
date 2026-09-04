@@ -19,11 +19,13 @@ final class OverlayController {
     private var visibility: OverlayVisibility?
     private var dismissTimer: Timer?
     private var clickMonitor: Any?
+    private(set) var shownItem: ReminderItem?
 
     var isShowing: Bool { panel != nil }
 
     func show(item: ReminderItem) {
         guard !isShowing else { return }
+        shownItem = item
         guard let asset = pickAsset(for: item) else { return }
         let url = Store.shared.mediaURL(for: asset)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
@@ -99,6 +101,7 @@ final class OverlayController {
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
         guard let panel else { return }
         self.panel = nil
+        shownItem = nil
 
         visibility?.shown = false          // run the exit animation
         visibility = nil
