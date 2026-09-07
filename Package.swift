@@ -14,7 +14,6 @@ let package = Package(
                 .product(name: "Lottie", package: "lottie-spm")
             ],
             path: "Sources/Notipop",
-            resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]

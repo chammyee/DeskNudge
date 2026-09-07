@@ -21,19 +21,18 @@
 - **잠자기 방해 안 함** — 일반 타이머만 사용. 잠자면 멈췄다가 깨어나면 재개(밀린 알림 몰아치기 없음).
 - **화면 공유·녹화 감지 시 자동 숨김** (아래 한계 참고)
 
-## 화면 공유·녹화 감지의 한계
+## 회의·녹화 중 알림 중지
 
-macOS에는 "지금 화면이 녹화 중"인지 알려 주는 공식 API가 없습니다. Notipop은 감지 가능한 신호를 조합합니다:
+macOS에는 "지금 화면이 녹화 중"인지 알려 주는 공식 API가 없어, 감지 가능한 신호만 조합합니다:
 
 | 감지됨 | 감지 안 됨 |
 |---|---|
 | **카메라 사용 중** (브라우저 영상통화 포함, 기본 켜짐) | 카메라 끄고 화면만 공유하는 경우 |
-| 마이크 사용 중 (옵션, 기본 꺼짐 — 오탐 있음) | |
-| 화면 미러링 / AirPlay, 세션 "화면 캡처 중" 힌트 | 목록에 없는 임의의 녹화 도구 |
-| 설정에 등록된 회의/녹화 앱 실행 (Zoom·Teams·OBS·Loom 등, 편집 가능) | |
+| 마이크 사용 중 (옵션, 기본 꺼짐 — 오탐 있음) | 임의의 화면 녹화 도구 |
+| 화면 미러링 / AirPlay, 세션 "화면 캡처 중" 힌트 | |
 
-브라우저 웹 회의는 앱으로는 안 잡히지만 대부분 카메라를 켜므로 커버됩니다.
-완벽 보장은 아니며, 각 항목을 설정에서 끌 수 있습니다.
+완벽 보장은 아니며 각 항목을 설정에서 끌 수 있습니다.
+확실히 방해받기 싫으면 메뉴바에서 **일시정지**(30분~4시간).
 
 ## 설치 (받는 사람)
 
@@ -77,12 +76,12 @@ make run
 
 ### 배포용 기본값 굽기
 
-신규 설치 시 `Sources/Notipop/Resources/seed/` 의 `DefaultSettings.json` + 이미지가
+신규 설치 시 `seed/` 의 `DefaultSettings.json` + 이미지가
 초기 상태로 쓰입니다. 현재 내 설정을 기본값으로 만들려면:
 
 ```bash
-cp ~/Library/Application\ Support/Notipop/settings.json Sources/Notipop/Resources/seed/DefaultSettings.json
-cp ~/Library/Application\ Support/Notipop/Media/* Sources/Notipop/Resources/seed/
+cp ~/Library/Application\ Support/Notipop/settings.json seed/DefaultSettings.json
+cp ~/Library/Application\ Support/Notipop/Media/* seed/
 make app
 ```
 
@@ -106,5 +105,8 @@ Sources/Notipop/
 ├── Overlay/                   최상단 패널 + 미디어(이미지/GIF/Lottie) 렌더링
 ├── Detection/CaptureDetector  카메라·마이크·화면 공유 감지
 ├── Settings/                  SwiftUI 설정 화면
-└── Support/                   LoginItem(SMAppService), DebugLog
+└── Support/                   LoginItem(SMAppService), AppAsset
 ```
+
+`seed/` (레포 루트): 신규 설치 시 쓰이는 기본 설정 + 이미지. `bundle.sh`가
+`Notipop.app/Contents/Resources/seed/` 로 복사, `Store`가 첫 실행 때 읽습니다.

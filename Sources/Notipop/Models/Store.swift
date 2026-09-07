@@ -54,11 +54,10 @@ final class Store: ObservableObject {
         if needsInitialSave { saveNow() }
     }
 
-    /// Loads `Resources/seed/DefaultSettings.json` and copies every image it
-    /// references out of the bundle into `mediaDir`.
+    /// Loads `Contents/Resources/seed/DefaultSettings.json` from the app bundle
+    /// and copies every image it references into `mediaDir`.
     private static func bundledSeed(into mediaDir: URL) -> AppSettings? {
-        guard let jsonURL = Bundle.module.url(forResource: "DefaultSettings", withExtension: "json", subdirectory: "seed")
-                ?? Bundle.module.url(forResource: "DefaultSettings", withExtension: "json"),
+        guard let jsonURL = Bundle.main.url(forResource: "DefaultSettings", withExtension: "json", subdirectory: "seed"),
               let data = try? Data(contentsOf: jsonURL),
               let seed = try? JSONDecoder().decode(AppSettings.self, from: data)
         else { return nil }
