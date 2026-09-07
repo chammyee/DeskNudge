@@ -37,12 +37,33 @@ final class Store: ObservableObject {
            let loaded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = loaded
         } else {
-            settings = AppSettings.makeDefault()
+            // Fresh install: use the bundled seed (settings + its images) if
+            // present, otherwise the hard-coded defaults.
+            settings = Self.bundledSeed(into: mediaDirectory) ?? AppSettings.makeDefault()
             needsInitialSave = true
         }
 
         observe()
         if needsInitialSave { saveNow() }
+    }
+
+    /// Loads `Resources/seed/DefaultSettings.json` and copies every image it
+    /// references out of the bundle into `mediaDir`.
+    private static func bundledSeed(into mediaDir: URL) -> AppSettings? {
+        guard let jsonURL = Bundle.module.url(forResource: "DefaultSettings", withExtension: "json", subdirectory: "seed")
+                ?? Bundle.module.url(forResource: "DefaultSettings", withExtension: "json"),
+              let data = try? Data(contentsOf: jsonURL),
+              let seed = try? JSONDecoder().decode(AppSettings.self, from: data)
+        else { return nil }
+
+        let fm = FileManager.default
+        let seedDir = jsonURL.deletingLastPathComponent()
+        for asset in seed.items.flatMap(\.media) {
+            let dest = mediaDir.appendingPathComponent(asset.fileName)
+            guard !fm.fileExists(atPath: dest.path) else { continue }
+            try? fm.copyItem(at: seedDir.appendingPathComponent(asset.fileName), to: dest)
+        }
+        return seed
     }
 
     private func observe() {

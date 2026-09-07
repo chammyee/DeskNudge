@@ -59,6 +59,20 @@ make run
    → 시스템 설정 > 일반 > 로그인 항목에서 Notipop 허용이 필요할 수 있습니다.
 
 설정과 업로드한 미디어는 `~/Library/Application Support/Notipop/` 에 저장됩니다.
+업데이트(`git pull` + `make install`)해도 이 폴더는 그대로 유지됩니다.
+
+### 배포용 기본값 굽기
+
+신규 설치 시 `Sources/Notipop/Resources/seed/` 의 `DefaultSettings.json` + 이미지가
+초기 상태로 쓰입니다. 현재 내 설정을 기본값으로 만들려면:
+
+```bash
+cp ~/Library/Application\ Support/Notipop/settings.json Sources/Notipop/Resources/seed/DefaultSettings.json
+cp ~/Library/Application\ Support/Notipop/Media/* Sources/Notipop/Resources/seed/
+make app
+```
+
+(기존 사용자의 설정은 덮어쓰지 않습니다 — seed는 `settings.json` 이 없을 때만 적용.)
 
 ## 배포
 

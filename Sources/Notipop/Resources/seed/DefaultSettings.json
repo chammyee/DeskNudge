@@ -1,0 +1,143 @@
+{
+  "globallyEnabled" : true,
+  "items" : [
+    {
+      "activeWindows" : [
+        {
+          "endMinute" : 630,
+          "id" : "4D45B3A5-DE22-4ABB-AE57-479F1B0742F2",
+          "startMinute" : 595,
+          "weekdays" : [
+            6,
+            3,
+            5,
+            4,
+            2
+          ]
+        },
+        {
+          "endMinute" : 1170,
+          "id" : "D2504DEA-F579-4ED3-A265-A798294F59B9",
+          "startMinute" : 1135,
+          "weekdays" : [
+            6,
+            2,
+            5,
+            4,
+            3
+          ]
+        }
+      ],
+      "dismissMode" : "untilClick",
+      "displayDuration" : 8,
+      "enabled" : true,
+      "fixedPosition" : false,
+      "id" : "CA39F901-4671-44EA-B335-423EE5DA2436",
+      "intervalMinutes" : 10,
+      "maxIntervalMinutes" : 60,
+      "media" : [
+        {
+          "fileName" : "597060B4-D5A3-4DE4-92D0-CE85ADFDF120.png",
+          "id" : "C8D9FC91-0B8C-4242-8A69-1B09B6C21B08",
+          "kind" : "image",
+          "originalName" : "noti03.png"
+        }
+      ],
+      "minIntervalMinutes" : 10,
+      "name" : "출퇴근 찍기",
+      "position" : "center",
+      "sizeScale" : 0.7867932372505544,
+      "triggerMode" : "fixedIntervalInWindows"
+    },
+    {
+      "activeWindows" : [
+        {
+          "endMinute" : 1440,
+          "id" : "DD45FE1A-ED88-4809-B175-A72637D8D77D",
+          "startMinute" : 630,
+          "weekdays" : [
+            2,
+            6,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "dismissMode" : "timed",
+      "displayDuration" : 1,
+      "enabled" : true,
+      "fixedPosition" : false,
+      "id" : "4049B8B3-5B14-4E6A-A4B8-4E83E1D797E9",
+      "intervalMinutes" : 10,
+      "maxIntervalMinutes" : 60,
+      "media" : [
+        {
+          "fileName" : "640C4616-077C-4548-9051-C7C345F92BE9.png",
+          "id" : "33D4AE80-19E8-4516-8036-DFA4EA3DBF21",
+          "kind" : "image",
+          "originalName" : "noti01.png"
+        },
+        {
+          "fileName" : "C765AB67-10AA-4CFD-A634-8E3DC690E32C.png",
+          "id" : "DB9CDBE7-6456-49D4-B470-4C3DD88B859B",
+          "kind" : "image",
+          "originalName" : "noti02.png"
+        },
+        {
+          "fileName" : "5EBE107D-4994-4E02-AA3E-D2974C8B2AB6.png",
+          "id" : "A7B0E15F-EDDA-4B2B-A104-5A967E93DFB2",
+          "kind" : "image",
+          "originalName" : "noti04.png"
+        }
+      ],
+      "minIntervalMinutes" : 30,
+      "name" : "자세 고쳐앉기",
+      "position" : "center",
+      "sizeScale" : 0.6870478797117516,
+      "triggerMode" : "randomInterval"
+    },
+    {
+      "activeWindows" : [
+
+      ],
+      "dismissMode" : "timed",
+      "displayDuration" : 2,
+      "enabled" : true,
+      "fixedPosition" : false,
+      "id" : "5729BF87-A083-4DF9-97C9-B8DB6F0A2FD9",
+      "intervalMinutes" : 10,
+      "maxIntervalMinutes" : 120,
+      "media" : [
+        {
+          "fileName" : "CB613351-2C95-468A-BBF0-CE3F120FDFFE.png",
+          "id" : "252FBCDF-BD85-406A-9573-03BA6161C699",
+          "kind" : "image",
+          "originalName" : "noti05.png"
+        }
+      ],
+      "minIntervalMinutes" : 30,
+      "name" : "긍정",
+      "position" : "center",
+      "sizeScale" : 0.3145458009977827,
+      "triggerMode" : "randomInterval"
+    }
+  ],
+  "launchAtLogin" : false,
+  "meetingAppBundleIDs" : [
+    "us.zoom.xos",
+    "com.microsoft.teams2",
+    "com.microsoft.teams",
+    "com.hnc.Discord",
+    "com.tinyspeck.slackmacgap",
+    "com.obsproject.obs-studio",
+    "com.apple.QuickTimePlayerX",
+    "com.loom.desktop",
+    "com.cisco.webexmeetingsapp",
+    "com.google.meet"
+  ],
+  "showMenuBarIcon" : true,
+  "suppressDuringScreenShare" : true,
+  "suppressWhenCameraActive" : true,
+  "suppressWhenMicActive" : false
+}
