@@ -35,7 +35,21 @@ macOS에는 "지금 화면이 녹화 중"인지 알려 주는 공식 API가 없�
 브라우저 웹 회의는 앱으로는 안 잡히지만 대부분 카메라를 켜므로 커버됩니다.
 완벽 보장은 아니며, 각 항목을 설정에서 끌 수 있습니다.
 
-## 빌드 / 설치
+## 설치 (받는 사람)
+
+터미널 한 줄 — 다운로드·설치·실행까지. Gatekeeper 경고 없음:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chammyee/DeskNudge/main/scripts/install.sh | bash
+```
+
+또는 [Releases](https://github.com/chammyee/DeskNudge/releases/latest)에서 zip 받아
+압축 해제 → `Notipop.app` 을 응용 프로그램으로 드래그 (이 경우 첫 실행 시 우클릭 → 열기).
+
+업데이트도 같은 한 줄 다시 실행하면 됨. 설정·이미지는 유지.
+(Apple Silicon 전용 · Apple 공증 없음)
+
+## 빌드 (개발)
 
 요구: macOS 13+, Xcode Command Line Tools (`xcode-select --install`).
 
