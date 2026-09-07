@@ -33,9 +33,16 @@ final class Store: ObservableObject {
         try? fm.createDirectory(at: mediaDirectory, withIntermediateDirectories: true)
 
         var needsInitialSave = false
-        if let data = try? Data(contentsOf: settingsFile),
-           let loaded = try? JSONDecoder().decode(AppSettings.self, from: data) {
-            settings = loaded
+        if let data = try? Data(contentsOf: settingsFile) {
+            if let loaded = try? JSONDecoder().decode(AppSettings.self, from: data) {
+                settings = loaded
+            } else {
+                // Unreadable file — keep a copy before it gets overwritten.
+                try? fm.removeItem(at: settingsFile.appendingPathExtension("bak"))
+                try? fm.moveItem(at: settingsFile, to: settingsFile.appendingPathExtension("bak"))
+                settings = Self.bundledSeed(into: mediaDirectory) ?? AppSettings.makeDefault()
+                needsInitialSave = true
+            }
         } else {
             // Fresh install: use the bundled seed (settings + its images) if
             // present, otherwise the hard-coded defaults.
