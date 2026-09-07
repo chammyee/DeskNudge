@@ -77,7 +77,6 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
     @ObservedObject var settings: AppSettings
-    @State private var newBundleID = ""
     @State private var snoozeChoice = StatusBarController.snoozeOptions.first!.minutes
 
     private var snoozeLabel: String {
@@ -133,51 +132,11 @@ private struct GeneralSettingsView: View {
                 Toggle("카메라가 켜져 있으면 알림 중지", isOn: $settings.suppressWhenCameraActive)
                 Toggle("마이크가 켜져 있으면 알림 중지", isOn: $settings.suppressWhenMicActive)
                 Toggle("화면 공유, 미러링이 감지되면 알림 중지", isOn: $settings.suppressDuringScreenShare)
-                Text("브라우저 영상 통화 포함. 브라우저 안의 웹 회의는 앱으로는 안 잡히지만 대부분 카메라를 켜므로 ‘카메라’ 옵션으로 커버됩니다. 화면만 공유하고 카메라를 끈 경우는 감지되지 않을 수 있습니다.")
+                Text("브라우저 영상 통화 포함 — 웹 회의는 앱으로는 안 잡히지만 대부분 카메라를 켜므로 ‘카메라’ 옵션으로 커버됩니다. 화면만 공유하고 카메라를 끈 경우는 감지되지 않을 수 있어요.")
                     .font(.callout).foregroundStyle(.secondary)
-            }
-
-            Section("회의·녹화 감지할 앱") {
-                HStack {
-                    TextField("번들 ID 추가 (예: us.zoom.xos)", text: $newBundleID)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(addBundleID)
-                    Button("추가하기", action: addBundleID)
-                }
-
-                ForEach(Array(settings.meetingAppBundleIDs.enumerated()), id: \.offset) { i, bid in
-                    let app = InstalledApp.info(bundleID: bid)
-                    HStack(spacing: 12) {
-                        Image(nsImage: app.icon)
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(width: 64, height: 64)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(app.name).fontWeight(.medium)
-                            Text(app.installed ? bid : "\(bid) · 미설치")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(role: .destructive) {
-                            settings.meetingAppBundleIDs.remove(at: i)
-                        } label: {
-                            Image(systemName: "minus.circle").font(.title3)
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    .padding(.vertical, 2)
-                }
             }
         }
         .formStyle(.grouped)
-    }
-
-    private func addBundleID() {
-        let v = newBundleID.trimmingCharacters(in: .whitespaces)
-        guard !v.isEmpty, !settings.meetingAppBundleIDs.contains(v) else { return }
-        settings.meetingAppBundleIDs.append(v)
-        newBundleID = ""
     }
 }
 

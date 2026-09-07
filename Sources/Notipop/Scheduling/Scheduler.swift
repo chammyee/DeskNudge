@@ -64,7 +64,6 @@ final class Scheduler {
         }
 
         let detector = CaptureDetector(
-            meetingBundleIDs: settings.meetingAppBundleIDs,
             checkScreenShare: settings.suppressDuringScreenShare,
             checkCamera: settings.suppressWhenCameraActive,
             checkMic: settings.suppressWhenMicActive)

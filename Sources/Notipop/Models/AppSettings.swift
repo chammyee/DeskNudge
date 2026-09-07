@@ -14,20 +14,6 @@ final class AppSettings: ObservableObject, Codable {
     /// Suppress overlays while the microphone is active anywhere (more false positives).
     @Published var suppressWhenMicActive: Bool = false
 
-    /// Bundle identifiers that, when running, count as "screen sharing / recording in progress".
-    @Published var meetingAppBundleIDs: [String] = [
-        "us.zoom.xos",                 // Zoom
-        "com.microsoft.teams2",        // Teams (new)
-        "com.microsoft.teams",         // Teams (classic)
-        "com.hnc.Discord",             // Discord
-        "com.tinyspeck.slackmacgap",   // Slack
-        "com.obsproject.obs-studio",   // OBS
-        "com.apple.QuickTimePlayerX",  // QuickTime screen recording
-        "com.loom.desktop",            // Loom
-        "com.cisco.webexmeetingsapp",  // Webex
-        "com.google.meet",             // Google Meet (standalone PWA)
-    ]
-
     /// Overlays paused until this date (snooze). nil = not snoozed.
     @Published var snoozedUntil: Date? = nil
 
@@ -41,7 +27,7 @@ final class AppSettings: ObservableObject, Codable {
     // MARK: Codable
 
     enum CodingKeys: String, CodingKey {
-        case globallyEnabled, suppressDuringScreenShare, meetingAppBundleIDs
+        case globallyEnabled, suppressDuringScreenShare
         case suppressWhenCameraActive, suppressWhenMicActive
         case snoozedUntil, launchAtLogin, showMenuBarIcon, items
     }
@@ -54,9 +40,6 @@ final class AppSettings: ObservableObject, Codable {
         suppressDuringScreenShare = try c.decodeIfPresent(Bool.self, forKey: .suppressDuringScreenShare) ?? true
         suppressWhenCameraActive = try c.decodeIfPresent(Bool.self, forKey: .suppressWhenCameraActive) ?? true
         suppressWhenMicActive = try c.decodeIfPresent(Bool.self, forKey: .suppressWhenMicActive) ?? false
-        if let ids = try c.decodeIfPresent([String].self, forKey: .meetingAppBundleIDs) {
-            meetingAppBundleIDs = ids
-        }
         snoozedUntil = try c.decodeIfPresent(Date.self, forKey: .snoozedUntil)
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
         showMenuBarIcon = try c.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? true
@@ -70,7 +53,6 @@ final class AppSettings: ObservableObject, Codable {
         try c.encode(suppressDuringScreenShare, forKey: .suppressDuringScreenShare)
         try c.encode(suppressWhenCameraActive, forKey: .suppressWhenCameraActive)
         try c.encode(suppressWhenMicActive, forKey: .suppressWhenMicActive)
-        try c.encode(meetingAppBundleIDs, forKey: .meetingAppBundleIDs)
         try c.encodeIfPresent(snoozedUntil, forKey: .snoozedUntil)
         try c.encode(launchAtLogin, forKey: .launchAtLogin)
         try c.encode(showMenuBarIcon, forKey: .showMenuBarIcon)

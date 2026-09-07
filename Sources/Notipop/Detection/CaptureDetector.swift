@@ -10,12 +10,10 @@ import CoreAudio
 /// recorded", so we combine the signals that *are* available:
 ///   • display mirroring / AirPlay (`CGDisplayIsInMirrorSet`)
 ///   • the current-session "screen is captured" hint
-///   • running meeting & recorder apps (configurable bundle-id list)
 ///   • the camera being active anywhere (covers browser video calls)
 ///   • the microphone being active anywhere (optional; more false positives)
 struct CaptureDetector {
 
-    var meetingBundleIDs: [String]
     var checkScreenShare: Bool
     var checkCamera: Bool
     var checkMic: Bool
@@ -30,10 +28,7 @@ struct CaptureDetector {
     // MARK: Screen
 
     private func isScreenBeingShared() -> Bool {
-        if isDisplayMirrored() { return true }
-        if isSessionScreenCaptured() { return true }
-        if isMeetingOrRecorderRunning() { return true }
-        return false
+        isDisplayMirrored() || isSessionScreenCaptured()
     }
 
     private func isDisplayMirrored() -> Bool {
@@ -55,17 +50,6 @@ struct CaptureDetector {
         for key in ["CGSSessionScreenIsCaptured", "kCGSSessionScreenIsCaptured"] {
             if let n = dict[key] as? NSNumber, n.boolValue { return true }
             if let b = dict[key] as? Bool, b { return true }
-        }
-        return false
-    }
-
-    private func isMeetingOrRecorderRunning() -> Bool {
-        guard !meetingBundleIDs.isEmpty else { return false }
-        let ids = Set(meetingBundleIDs.map { $0.lowercased() })
-        for app in NSWorkspace.shared.runningApplications {
-            guard app.activationPolicy == .regular,
-                  let bid = app.bundleIdentifier?.lowercased() else { continue }
-            if ids.contains(bid) { return true }
         }
         return false
     }
